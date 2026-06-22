@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHSCT Ligature Risk Assessment Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{--pu:#6B3FA0;--pu-d:#3D1A6B;--pu-l:#EDE7F6;--mg:#C0006A;--mg-l:#FCE4F0;--red:#B91C1C;--red-bg:#FEE2E2;--amb:#B45309;--amb-bg:#FEF3C7;--grn:#166534;--grn-bg:#DCFCE7;--bd:#E5E7EB;--bg:#F8F7FC;--tx:#111827;--txm:#6B7280;--sh:0 1px 3px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;}
+.hdr{background:linear-gradient(135deg,var(--pu-d) 0%,var(--pu) 60%,var(--mg) 100%);color:#fff;}
+.hdr-in{max-width:1160px;margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:13px;}
+.logo{width:44px;height:44px;background:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo span{font-size:9px;font-weight:700;color:var(--pu);line-height:1.15;text-align:center;}
+.hdr h1{font-size:16px;font-weight:600;}.hdr p{font-size:11px;opacity:.8;margin-top:2px;}
+.hdr-act{margin-left:auto;display:flex;gap:7px;}
+.nav{background:#fff;border-bottom:1px solid var(--bd);}
+.nav-in{max-width:1160px;margin:0 auto;padding:0 22px;display:flex;overflow-x:auto;}
+.nb{padding:10px 14px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--txm);border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;}
+.nb.on{color:var(--pu);border-bottom-color:var(--pu);}.nb:hover:not(.on){color:var(--tx);background:#F3F4F6;}
+.main{max-width:1160px;margin:0 auto;padding:20px 22px;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+.btn-p{background:var(--pu);color:#fff;}.btn-p:hover{background:var(--pu-d);}
+.btn-o{background:#fff;color:var(--pu);border:1px solid var(--pu);}.btn-o:hover{background:var(--pu-l);}
+.btn-g{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);}
+.btn-s{padding:4px 10px;font-size:12px;}.btn-del{background:#FEE2E2;color:var(--red);border:none;}
+.card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:18px;box-shadow:var(--sh);}
+.card+.card{margin-top:13px;}.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;}
+.ct{font-size:14px;font-weight:600;}.cs{font-size:11px;color:var(--txm);margin-top:2px;}
+label{display:block;font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.45px;margin-bottom:4px;}
+input[type=text],input[type=date],input[type=number],select,textarea{width:100%;padding:7px 10px;border:1px solid var(--bd);border-radius:6px;font-size:13px;color:var(--tx);background:#fff;transition:border .15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pu);box-shadow:0 0 0 3px rgba(107,63,160,.1);}
+textarea{resize:vertical;min-height:60px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.fg{margin-bottom:12px;}
+.rag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
+.rag-red{background:var(--red-bg);color:var(--red);}.rag-amb{background:var(--amb-bg);color:var(--amb);}.rag-grn{background:var(--grn-bg);color:var(--grn);}
+.rd{width:6px;height:6px;border-radius:50%;}.rag-red .rd{background:var(--red);}.rag-amb .rd{background:var(--amb);}.rag-grn .rd{background:var(--grn);}
+.rag-sel{display:flex;gap:8px;}.ro{flex:1;padding:8px;border:2px solid var(--bd);border-radius:6px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .15s;}
+.ro.s-red{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+.ro.s-amb{border-color:var(--amb);background:var(--amb-bg);color:var(--amb);}
+.ro.s-grn{border-color:var(--grn);background:var(--grn-bg);color:var(--grn);}
+.lpt{width:100%;border-collapse:collapse;font-size:11px;}
+.lpt th{background:#F8F7FC;padding:6px 7px;text-align:left;font-size:10px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid var(--bd);}
+.lpt td{padding:5px 6px;border-bottom:1px solid var(--bd);vertical-align:top;}
+.lpt tr:hover td{background:#F9F9FF;}.lpt input,.lpt select,.lpt textarea{font-size:11px;padding:3px 6px;}.lpt textarea{min-height:36px;}
+.si{width:40px!important;text-align:center;}
+.rrd{font-weight:700;width:32px;text-align:center;padding:3px 4px;border-radius:4px;font-size:12px;display:inline-block;}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.sc{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:12px 14px;}
+.sv{font-size:23px;font-weight:700;color:var(--pu);line-height:1;}.sl{font-size:10px;color:var(--txm);margin-top:3px;text-transform:uppercase;letter-spacing:.4px;}
+.ar{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.ar:last-child{border-bottom:none;}.ai{flex:1;}.an{font-size:13px;font-weight:600;}.am{font-size:11px;color:var(--txm);margin-top:2px;}
+.aa{display:flex;gap:5px;}.cw{position:relative;height:180px;}
+.empty{text-align:center;padding:36px 16px;color:var(--txm);}
+.empty h3{font-size:14px;color:var(--tx);margin-bottom:4px;}
+.toast{position:fixed;bottom:20px;right:20px;background:#1F2937;color:#fff;padding:10px 15px;border-radius:7px;font-size:13px;z-index:9999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.hs{height:3px;background:linear-gradient(90deg,var(--pu),var(--mg));border-radius:2px 2px 0 0;}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.tag-red{background:var(--red-bg);color:var(--red);}.tag-amb{background:var(--amb-bg);color:var(--amb);}
+.tag-grn{background:var(--grn-bg);color:var(--grn);}.tag-pu{background:var(--pu-l);color:var(--pu);}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;}
+.md{background:#fff;border-radius:10px;padding:20px;width:93%;max-width:860px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.cb{display:flex;flex-wrap:wrap;gap:6px;}
+.ci{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:4px 8px;border:1px solid var(--bd);border-radius:5px;background:#fff;}
+.ci:has(input:checked){border-color:var(--pu);background:var(--pu-l);color:var(--pu);}
+.sd{display:flex;align-items:center;gap:8px;margin:16px 0 10px;}
+.sdl{flex:1;height:1px;background:var(--bd);}
+.sdt{font-size:10px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;}
+.ibox{padding:8px 11px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;margin-bottom:9px;}
+.ibox p{font-size:12px;color:#1E40AF;}
+.nred{padding:8px 12px;background:#FEE2E2;border-radius:6px;border-left:3px solid var(--red);}
+.nred p{font-size:12px;color:var(--red);font-weight:600;}
+.nred span{font-size:11px;color:#7F1D1D;display:block;margin-top:2px;}
+.review-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.review-tbl th{background:#F8F7FC;padding:6px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid var(--bd);}
+.review-tbl td{padding:5px 7px;border-bottom:1px solid var(--bd);vertical-align:top;}
+.review-tbl input,.review-tbl textarea,.review-tbl select{font-size:11px;padding:3px 6px;}
+@media(max-width:700px){.fr,.fr3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="hdr"><div class="hdr-in">
+  <div class="logo"><span>HSC<br>SHSCT</span></div>
+  <div><h1>Ligature Risk Assessment Tool</h1><p>Southern Health &amp; Social Care Trust &mdash; Management of Self Harm through the use of Ligatures (June 2026 &mdash; SGN-125)</p></div>
+  <div class="hdr-act">
+    <button class="btn btn-g btn-s" onclick="showView('new')">+ New assessment</button>
+    <button class="btn btn-g btn-s" onclick="showView('settings')">&#9881; Settings</button>
+  </div>
+</div></div>
+<div id="sp-status" style="display:none;background:#F8F7FC;border-bottom:1px solid #E5E7EB;padding:6px 22px;font-size:12px;text-align:center;"></div>
+
+<div class="nav"><div class="nav-in">
+  <button class="nb on" id="nav-dashboard" onclick="showView('dashboard')">Dashboard</button>
+  <button class="nb" id="nav-new" onclick="showView('new')">New assessment</button>
+  <button class="nb" id="nav-weekly" onclick="showView('weekly')">Weekly inspection log</button>
+  <button class="nb" id="nav-history" onclick="showView('history')">All assessments</button>
+  <button class="nb" id="nav-trends" onclick="showView('trends')">Trend analysis</button>
+  <button class="nb" id="nav-settings" onclick="showView('settings')">Settings</button>
+</div></div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="view-dashboard">
+  <div id="ds-stats" class="sg"></div>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:13px;">
+    <div class="card"><div class="ch"><div><div class="ct">Recent assessments</div><div class="cs">Latest completed ward assessments</div></div><button class="btn btn-o btn-s" onclick="showView('history')">View all</button></div><div id="ds-recent"></div></div>
+    <div class="card"><div class="ch"><div class="ct">Risk distribution</div></div><div class="cw"><canvas id="cRag"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-top:13px;"><div class="ch"><div class="ct">Most frequently identified ligature points</div><div class="cs">Across all assessments</div></div><div class="cw" style="height:145px;"><canvas id="cLP"></canvas></div></div>
+  <div class="card" style="margin-top:13px;"><div class="ch"><div class="ct">Actions requiring attention</div><div class="cs">Overdue or outstanding actions</div></div><div id="ds-actions"></div></div>
+</div>
+
+<!-- NEW ASSESSMENT -->
+<div id="view-new" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+    <div><h2 style="font-size:16px;font-weight:600;">New ligature risk assessment</h2>
+    <p style="font-size:12px;color:var(--txm);margin-top:2px;">Complete all sections in order. Risk ratings auto-calculate from L x I. Reference: SHSCT Policy June 2026 / SGN-125.</p></div>
+  </div>
+
+  <!-- S1 -->
+  <div class="card">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ct" style="margin-bottom:13px;">Section 1 &mdash; Ward / department details</div>
+    <div class="fr">
+      <div class="fg"><label>Directorate</label><select id="f-dir" onchange="filterDivs()"><option value="">Select directorate</option></select></div>
+      <div class="fg"><label>Hospital / site / division</label><select id="f-div"><option value="">Select hospital / site</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Ward / department / community facility</label><input type="text" id="f-ward" placeholder="e.g. Ward 3B, Bluestone Acute Unit"></div>
+      <div class="fg"><label>Date of assessment</label><input type="date" id="f-date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Name &amp; designation of assessor</label><input type="text" id="f-assessor" placeholder="Full name and job title"></div>
+      <div class="fg"><label>Reason for assessment</label>
+        <select id="f-reason"><option value="">Select reason</option><option>Initial</option><option>Annual review</option><option>Post incident</option><option>Change of location</option><option>Change of process / procedures</option><option>Change of work equipment</option></select></div>
+    </div>
+    <div class="fg"><label>Service presentation &mdash; include: specialty &middot; staffing &middot; number of beds / layout &middot; room type (open ward / side room / private) &middot; supervision / observation level</label>
+      <textarea id="f-svc" placeholder="e.g. 20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation available."></textarea></div>
+    <div class="fr">
+      <div class="fg"><label>Persons affected (tick all that apply)</label>
+        <div class="cb" id="f-persons">
+          <label class="ci"><input type="checkbox" value="Patient"> Patient</label>
+          <label class="ci"><input type="checkbox" value="Client"> Client</label>
+          <label class="ci"><input type="checkbox" value="Employee"> Employee</label>
+          <label class="ci"><input type="checkbox" value="Visitor"> Visitor</label>
+          <label class="ci"><input type="checkbox" value="Contractor"> Contractor</label>
+          <label class="ci"><input type="checkbox" value="Member of Public"> Member of Public</label>
+          <label class="ci"><input type="checkbox" value="Other"> Other</label>
+        </div></div>
+      <div class="fg"><label>Datix incidents in last 12 months? (keyword search: head, neck, throat, hang, hung, ligature &middot; CCS2 Patient Incidents, Behaviour, Self-Harm)</label>
+        <div style="display:flex;gap:8px;margin-top:5px;">
+          <label class="ci"><input type="radio" name="datix" value="Yes"> Yes</label>
+          <label class="ci"><input type="radio" name="datix" value="No" checked> No</label>
+        </div>
+        <textarea id="f-datix" placeholder="If yes &mdash; summarise incident(s), learning identified and actions taken..." style="margin-top:7px;min-height:44px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2 Environmental -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ct" style="margin-bottom:4px;">Section 2 &mdash; Environmental safety checklist</div>
+    <div class="cs" style="margin-bottom:12px;">Required per procedure Section 4.0 and Appendix 4, Step 4. Review all areas service users can access unsupervised. Note the floor plan (showing red/amber/green areas per Appendix 2) should accompany this assessment.</div>
+    <div class="fr">
+      <div>
+        <div class="sd"><div class="sdl"></div><div class="sdt">Room access &amp; observation</div><div class="sdl"></div></div>
+        <div class="fg"><label>Vision panels in doors to patient / client areas?</label><select id="e-vision"><option value="">Select</option><option>Yes &mdash; all patient areas</option><option>Yes &mdash; most patient areas</option><option>Partial &mdash; some areas only</option><option>No</option></select></div>
+        <div class="fg"><label>Solid doors without vision panels present?</label><select id="e-solid"><option value="">Select</option><option>No solid doors without vision panels</option><option>Yes &mdash; en-suites / toilets only</option><option>Yes &mdash; bedrooms</option><option>Yes &mdash; multiple area types</option></select></div>
+        <div class="fg"><label>Do rooms have thumb locks accessible from inside?</label><select id="e-thumb"><option value="">Select</option><option>No thumb locks fitted</option><option>Yes &mdash; bathrooms / toilets only</option><option>Yes &mdash; bedrooms</option><option>Yes &mdash; multiple areas</option></select></div>
+        <div class="fg"><label>Do staff hold override keys for all locked rooms?</label><select id="e-keys"><option value="">Select</option><option>Yes &mdash; all rooms</option><option>Yes &mdash; most rooms</option><option>Partial</option><option>No</option></select></div>
+        <div class="fg"><label>CCTV in place for communal / ward areas and external spaces?</label><select id="e-cctv"><option value="">Select</option><option>Yes &mdash; full coverage</option><option>Yes &mdash; partial coverage</option><option>No &mdash; not fitted</option><option>Not applicable</option></select></div>
+        <div class="fg"><label>Floor plan (RAG colour-coded by room) available and up to date?</label><select id="e-floorplan"><option value="">Select</option><option>Yes &mdash; current version on file</option><option>Yes &mdash; requires updating</option><option>No &mdash; to be created</option></select></div>
+      </div>
+      <div>
+        <div class="sd"><div class="sdl"></div><div class="sdt">Access control &amp; communication</div><div class="sdl"></div></div>
+        <div class="fg"><label>Access / egress controls to prevent unauthorised entry / exit?</label><select id="e-access"><option value="">Select</option><option>Yes &mdash; fully controlled</option><option>Yes &mdash; partial controls</option><option>No controls in place</option></select></div>
+        <div class="fg"><label>Staff have immediate access to alarm systems?</label><select id="e-alarm"><option value="">Select</option><option>Yes &mdash; personal alarms &amp; fixed points</option><option>Yes &mdash; personal alarms only</option><option>Yes &mdash; fixed points only</option><option>No</option></select></div>
+        <div class="fg"><label>Communication systems in place (radios / mobile phones)?</label><select id="e-comms"><option value="">Select</option><option>Yes &mdash; radios and mobile phones</option><option>Yes &mdash; mobile phones only</option><option>Yes &mdash; radios only</option><option>No</option></select></div>
+        <div class="fg"><label>Door management: anti-barricade solutions / vision panels in place?</label><select id="e-door"><option value="">Select</option><option>Yes</option><option>Partial</option><option>No</option><option>Not applicable</option></select></div>
+        <div class="fg"><label>Ligature rescue cutters available and subject to weekly check?</label><select id="e-cutters"><option value="">Select</option><option>Yes &mdash; on resuscitation trolley, weekly checked</option><option>Yes &mdash; secured central location, weekly checked</option><option>Yes but weekly check not yet confirmed</option><option>No &mdash; to be arranged</option></select></div>
+        <div class="fg"><label>Environmental checklist notes / gaps identified</label><textarea id="e-notes" placeholder="Note any gaps, deficiencies or remedial actions required from the above items..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S3 Ligature Points -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ch">
+      <div><div class="ct">Section 3 &mdash; Ligature point assessment (room by room)</div>
+      <div class="cs">Procedure Section 5: work up-down / left-right from a defined point in each room. Classify / colour-code each room. L = Likelihood (1&ndash;5) &middot; I = Impact (1&ndash;5) &middot; RR = L &times; I. If weight-bearing status unsure, assume yes.</div></div>
+      <button class="btn btn-o btn-s" onclick="addLPRow()">+ Add row</button>
+    </div>
+    <div class="ibox"><p>&#9432; <strong>Complete suspension is not required for a ligature to be fatal.</strong> Partial suspension (semi-seated, kneeling, lying) carries the same risk. Assess all potential anchor points regardless of height. Some points (e.g. grab rails) may need to remain &mdash; formally assess and record the justification.</p></div>
+    <div style="overflow-x:auto;">
+    <table class="lpt" id="lpt"><thead><tr>
+      <th style="width:62px;">RAG area</th>
+      <th style="width:135px;">Ligature point ref.</th>
+      <th style="width:72px;">Room / location</th>
+      <th style="width:55px;">Weight bearing?</th>
+      <th style="width:60px;">Observation level in this room</th>
+      <th style="width:145px;">Description of environment</th>
+      <th style="width:145px;">Existing control measures</th>
+      <th style="width:36px;">L</th><th style="width:36px;">I</th><th style="width:42px;">RR</th>
+      <th style="width:145px;">Further action required (incl. resource / cost implications)</th>
+      <th style="width:92px;">Actionee</th>
+      <th style="width:88px;">Target date</th>
+      <th style="width:80px;">Actual date completed</th>
+      <th style="width:82px;">Post-action RR (L x I)</th>
+      <th style="width:34px;"></th>
+    </tr></thead><tbody id="lpb"></tbody></table>
+    </div>
+    <button class="btn btn-o btn-s" style="margin-top:8px;" onclick="addLPRow()">+ Add ligature point row</button>
+  </div>
+
+  <!-- S4 Overall RAG -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ct" style="margin-bottom:11px;">Section 4 &mdash; Overall risk rating of this ward / care facility</div>
+    <p style="font-size:12px;color:var(--txm);margin-bottom:10px;">Determined after all ligature points and control measures considered. RED or AMBER requires ligature rescue cutters and staff training in that area.</p>
+    <div class="rag-sel" id="rag-sel">
+      <div class="ro" onclick="setRag('red',this)"><div style="font-size:13px;color:var(--red);margin-bottom:4px;">&#9632; RED &mdash; High risk</div><div style="font-size:10px;color:var(--txm);font-weight:400;">Care frequently delivered to patients with acute / severe mental illness, unpredictable behaviour. Most patients spend time in private without direct staff supervision.</div></div>
+      <div class="ro" onclick="setRag('amb',this)"><div style="font-size:13px;color:var(--amb);margin-bottom:4px;">&#9632; AMBER &mdash; Medium risk</div><div style="font-size:10px;color:var(--txm);font-weight:400;">Most patients spend long periods with minimum direct supervision, usually in peer company. A number of unlocked and accessible areas present.</div></div>
+      <div class="ro" onclick="setRag('grn',this)"><div style="font-size:13px;color:var(--grn);margin-bottom:4px;">&#9632; GREEN &mdash; Low risk</div><div style="font-size:10px;color:var(--txm);font-weight:400;">Areas with good movement of staff and patients through well-observed, high-traffic spaces.</div></div>
+    </div>
+    <div id="rag-notice" style="display:none;margin-top:10px;" class="nred">
+      <p>&#9888; Ligature rescue cutters required. Staff training must be arranged.</p>
+      <span>RED: <strong>all</strong> core staff must attend accredited half-day Ligature Rescue training (2-yearly refresher). Minimum 2 trained staff on duty at all times.<br>AMBER: <strong>designated</strong> staff attend half-day face-to-face training; remaining staff complete e-learning (3-yearly).<br>Submit training needs form to: <strong>safetyintervention.training@southerntrust.hscni.net</strong></span>
+    </div>
+  </div>
+
+  <!-- S5 Rescue equipment and post-incident -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ct" style="margin-bottom:11px;">Section 5 &mdash; Rescue equipment &amp; post-incident record</div>
+    <div class="fr">
+      <div class="fg"><label>Ligature rescue cutter type available</label><select id="f-ctype"><option value="">Select</option><option>3 x LC1 cutters</option><option>2 x LC1 + 1 x Wire cutter (higher risk areas)</option><option>Not applicable (GREEN area)</option><option>To be arranged</option></select></div>
+      <div class="fg"><label>Cutter storage location (must be communicated at induction)</label><input type="text" id="f-cloc" placeholder="e.g. Bottom compartment of resuscitation trolley, Ward 3B nurse station"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Has a ligature incident occurred since the last assessment?</label><select id="f-incident"><option value="">Select</option><option>No</option><option>Yes &mdash; no injury</option><option>Yes &mdash; injury</option><option>Yes &mdash; fatality</option></select></div>
+      <div class="fg"><label>DATIX reference number (if applicable)</label><input type="text" id="f-datix-ref" placeholder="e.g. IR1-2026-XXXXX"></div>
+    </div>
+    <div class="fg"><label>Post-incident actions completed (tick all that apply &mdash; per Appendix 4 of the Rescue Equipment Procedure)</label>
+      <div class="cb" id="f-pi">
+        <label class="ci"><input type="checkbox" value="Scene secured / forensic evidence preserved"> Scene secured / forensic evidence preserved</label>
+        <label class="ci"><input type="checkbox" value="999 / crash team called"> 999 / crash team called</label>
+        <label class="ci"><input type="checkbox" value="Doctor informed"> Doctor informed</label>
+        <label class="ci"><input type="checkbox" value="Vital signs / physical observations taken"> Vital signs taken</label>
+        <label class="ci"><input type="checkbox" value="Site Manager / Senior Nurse informed"> Site Manager / Senior Nurse informed</label>
+        <label class="ci"><input type="checkbox" value="Family / next of kin informed"> Family / NOK informed</label>
+        <label class="ci"><input type="checkbox" value="Documented in patient notes"> Documented in patient notes</label>
+        <label class="ci"><input type="checkbox" value="Observation level reviewed and recorded in notes"> Observation level reviewed</label>
+        <label class="ci"><input type="checkbox" value="Level of risk assessed and recorded in notes"> Risk level re-assessed</label>
+        <label class="ci"><input type="checkbox" value="Care plan updated"> Care plan updated</label>
+        <label class="ci"><input type="checkbox" value="DATIX completed and reference recorded"> DATIX completed &amp; ref recorded</label>
+        <label class="ci"><input type="checkbox" value="Emotional support provided to patient / witnesses"> Emotional support &mdash; patient / witnesses</label>
+        <label class="ci"><input type="checkbox" value="Staff hot debrief provided"> Staff hot debrief provided</label>
+        <label class="ci"><input type="checkbox" value="Ligature cutter replaced immediately"> Cutter replaced immediately</label>
+        <label class="ci"><input type="checkbox" value="SAI submitted"> SAI submitted</label>
+      </div></div>
+    <div class="fg"><label>Post-incident notes (include type of ligature used and ligature anchor point &mdash; this narrative supports DATIX trend analysis)</label>
+      <textarea id="f-pi-notes" placeholder="e.g. Ligature used was a belt. Ligature / anchor point was a door handle. Detail response taken, investigation or learning identified..."></textarea></div>
+  </div>
+
+  <!-- S6 Ward Manager Follow-Up Review -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ch">
+      <div><div class="ct">Section 6 &mdash; Ward manager / facility manager follow-up &amp; review</div>
+      <div class="cs">Record progress on actions. This section corresponds to Page 4 of the official RA form.</div></div>
+      <button class="btn btn-o btn-s" onclick="addReviewRow()">+ Add review row</button>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="review-tbl" id="rev-tbl"><thead><tr>
+      <th style="width:100px;">Actual review date</th>
+      <th style="width:80px;">LP ref.</th>
+      <th style="width:220px;">Action undertaken</th>
+      <th style="width:110px;">Actionee</th>
+      <th style="width:120px;">Designation</th>
+      <th style="width:200px;">Progress update</th>
+      <th style="width:34px;"></th>
+    </tr></thead><tbody id="rev-body"></tbody></table>
+    </div>
+    <button class="btn btn-o btn-s" style="margin-top:8px;" onclick="addReviewRow()">+ Add review row</button>
+  </div>
+
+  <!-- S7 Escalation and sign-off -->
+  <div class="card" style="margin-top:13px;">
+    <div class="hs" style="margin:-18px -18px 13px;border-radius:9px 9px 0 0;"></div>
+    <div class="ct" style="margin-bottom:11px;">Section 7 &mdash; Escalation &amp; sign-off</div>
+    <div class="fr">
+      <div class="fg"><label>Items referred to Line Manager / Assistant Director?</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="esc" value="Yes"> Yes</label><label class="ci"><input type="radio" name="esc" value="No" checked> No</label></div></div>
+      <div class="fg"><label>Date referred to Line Manager / AD</label><input type="date" id="f-escdate"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Risk added to service risk register?</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="rr" value="Yes"> Yes</label><label class="ci"><input type="radio" name="rr" value="No" checked> No</label></div></div>
+      <div class="fg"><label>Risk register reference</label><input type="text" id="f-rref" placeholder="Reference number if added to risk register"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Completed RA form sent to H&amp;S team? (ligature.safety@southerntrust.hscni.net)</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="sent" value="Yes"> Yes</label><label class="ci"><input type="radio" name="sent" value="No" checked> No</label></div></div>
+      <div class="fg"><label>Training needs form submitted? (safetyintervention.training@southerntrust.hscni.net)</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="tnf" value="Yes"> Yes</label><label class="ci"><input type="radio" name="tnf" value="No" checked> No</label></div></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Completed RA shared with existing staff and included in induction?</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="shared" value="Yes"> Yes</label><label class="ci"><input type="radio" name="shared" value="No" checked> No</label></div></div>
+      <div class="fg"><label>Cutter location communicated to all staff including bank / agency at induction?</label>
+        <div style="display:flex;gap:8px;margin-top:5px;"><label class="ci"><input type="radio" name="cutind" value="Yes"> Yes</label><label class="ci"><input type="radio" name="cutind" value="No" checked> No</label></div></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Ward manager / approver name &amp; designation</label><input type="text" id="f-approver" placeholder="Full name and job title"></div>
+      <div class="fg"><label>Date approved</label><input type="date" id="f-appdate"></div>
+    </div>
+    <div class="fg"><label>Additional notes</label><textarea id="f-notes" placeholder="Any further observations, actions or comments not captured above..."></textarea></div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:13px;justify-content:flex-end;">
+    <button class="btn btn-o" onclick="showView('dashboard')">Cancel</button>
+    <button class="btn btn-p" onclick="saveA()">Save assessment</button>
+  </div>
+</div>
+<!-- WEEKLY LOG -->
+<div id="view-weekly" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+    <div><h2 style="font-size:16px;font-weight:600;">Weekly inspection log</h2>
+    <p style="font-size:12px;color:var(--txm);">Policy Section 7.5 (Line Manager responsibilities): weekly inspections must check for new ligature risks, damage / tampering with fittings, or loss of safety controls. Any defects must be reported immediately to Estates Services on <strong>028 375 63300</strong> or via MICAD Assist. A record must be maintained.</p></div>
+    <button class="btn btn-p btn-s" onclick="openWM()">+ Log this week</button>
+  </div>
+  <div class="card"><div id="wk-list"></div></div>
+</div>
+
+<!-- HISTORY -->
+<div id="view-history" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+    <div><h2 style="font-size:16px;font-weight:600;">All assessments</h2></div>
+    <button class="btn btn-p btn-s" onclick="showView('new')">+ New assessment</button>
+  </div>
+  <div class="card"><div id="hist-list"></div></div>
+</div>
+
+<!-- TRENDS -->
+<div id="view-trends" style="display:none;">
+  <h2 style="font-size:16px;font-weight:600;margin-bottom:13px;">Trend analysis</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+    <div class="card"><div class="ct" style="margin-bottom:11px;">Risk level over time</div><div class="cw"><canvas id="cTrend"></canvas></div></div>
+    <div class="card"><div class="ct" style="margin-bottom:11px;">Top ligature point types identified</div><div class="cw"><canvas id="cTop"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:11px;">Overdue / outstanding actions</div><div id="tr-od"></div></div>
+  <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:11px;">Ward risk summary</div><div id="tr-wards"></div></div>
+  <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:11px;">Environmental safety gaps across all assessments</div><div id="tr-env"></div></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="view-settings" style="display:none;">
+  <h2 style="font-size:16px;font-weight:600;margin-bottom:13px;">Settings &mdash; manage lists</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;">
+    <div class="card"><div class="ct" style="margin-bottom:11px;">Directorates</div><div id="s-dirs"></div>
+      <div style="display:flex;gap:7px;margin-top:9px;"><input type="text" id="si-dir" placeholder="Add new directorate..." style="flex:1;"><button class="btn btn-p btn-s" onclick="addDir()">Add</button></div></div>
+    <div class="card"><div class="ct" style="margin-bottom:11px;">Hospitals / sites / divisions</div>
+      <div style="margin-bottom:8px;"><label>Link to directorate (optional)</label><select id="si-dd"><option value="">- All / unlinked -</option></select></div>
+      <div id="s-divs"></div>
+      <div style="display:flex;gap:7px;margin-top:9px;"><input type="text" id="si-div" placeholder="Add new hospital / site..." style="flex:1;"><button class="btn btn-p btn-s" onclick="addDiv()">Add</button></div></div>
+  </div>
+  <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:11px;">Estates building officers</div>
+    <p style="font-size:12px;color:var(--txm);margin-bottom:9px;">The Estates Building Officer for your locality is your first point of contact for ligature risk assessments and remedial works. General helpdesk: <strong>028 375 63300</strong></p>
+    <div id="s-ests"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:7px;margin-top:9px;align-items:end;">
+      <div><label>Name</label><input type="text" id="se-n" placeholder="Ryan Kerr"></div>
+      <div><label>Locality</label><input type="text" id="se-l" placeholder="Craigavon &amp; Banbridge"></div>
+      <div><label>Base</label><input type="text" id="se-b" placeholder="CAH"></div>
+      <div><label>Phone</label><input type="text" id="se-p" placeholder="07342 066171"></div>
+      <button class="btn btn-p btn-s" style="margin-bottom:1px;" onclick="addEst()">Add</button>
+    </div></div>
+  <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:7px;">Data management</div>
+    <p style="font-size:12px;color:var(--txm);margin-bottom:11px;">All data is stored in your browser's local storage. Export a JSON backup regularly, or clear all data below.</p>
+    <div style="display:flex;gap:7px;"><button class="btn btn-o btn-s" onclick="expJSON()">Export data backup (JSON)</button><button class="btn btn-del btn-s" onclick="clrAll()">Clear all data</button></div></div>
+</div>
+
+</div><!-- /main -->
+
+<!-- VIEW MODAL -->
+<div id="vmod" style="display:none;" class="mo">
+  <div class="md"><div id="vmod-c"></div>
+    <div style="margin-top:13px;display:flex;gap:7px;justify-content:flex-end;">
+      <button class="btn btn-o btn-s" onclick="doPDF()">Export PDF</button>
+      <button class="btn btn-p btn-s" onclick="closeM()">Close</button>
+    </div></div>
+</div>
+
+<!-- WEEKLY MODAL -->
+<div id="wmod" style="display:none;" class="mo">
+  <div class="md" style="max-width:540px;">
+    <h2 style="font-size:14px;font-weight:600;margin-bottom:13px;">Log weekly inspection check</h2>
+    <div class="fr">
+      <div class="fg"><label>Ward / area</label><select id="w-ward"><option value="">Select ward</option></select></div>
+      <div class="fg"><label>Date of check</label><input type="date" id="w-date"></div>
+    </div>
+    <div class="fg"><label>Checked by (name &amp; designation)</label><input type="text" id="w-by" placeholder="Name and job title"></div>
+    <div class="fg"><label>New ligature risks identified?</label><div style="display:flex;gap:8px;margin-top:4px;"><label class="ci"><input type="radio" name="wr" value="Yes"> Yes</label><label class="ci"><input type="radio" name="wr" value="No" checked> No</label></div></div>
+    <div class="fg"><label>Damage or tampering with fittings noted?</label><div style="display:flex;gap:8px;margin-top:4px;"><label class="ci"><input type="radio" name="wd" value="Yes"> Yes</label><label class="ci"><input type="radio" name="wd" value="No" checked> No</label></div></div>
+    <div class="fg"><label>Ligature cutters present and undamaged?</label><div style="display:flex;gap:8px;margin-top:4px;"><label class="ci"><input type="radio" name="wc" value="Yes" checked> Yes</label><label class="ci"><input type="radio" name="wc" value="No"> No</label><label class="ci"><input type="radio" name="wc" value="N/A"> N/A</label></div></div>
+    <div class="fg"><label>Loss of safety controls noted?</label><div style="display:flex;gap:8px;margin-top:4px;"><label class="ci"><input type="radio" name="wl" value="Yes"> Yes</label><label class="ci"><input type="radio" name="wl" value="No" checked> No</label></div></div>
+    <div class="fg"><label>Notes / defects to report to Estates (028 375 63300 or MICAD Assist)</label><textarea id="w-notes" placeholder="Describe any defects, risks, or actions taken. Any defects must be reported immediately."></textarea></div>
+    <div style="display:flex;gap:7px;justify-content:flex-end;margin-top:11px;">
+      <button class="btn btn-o btn-s" onclick="closeWM()">Cancel</button>
+      <button class="btn btn-p btn-s" onclick="saveWC()">Save check</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const LPR=[
+  {r:1,n:'Windows: catches / frames / blinds'},{r:2,n:'Doors: handles, hinges, door closers'},
+  {r:3,n:'Curtain rail systems (incl. suspended rails / shower curtains) / bedrails'},{r:4,n:'Light fittings'},
+  {r:5,n:'Radiators'},{r:6,n:'Exposed pipework'},{r:7,n:'Wardrobes: handles, locks, rails'},
+  {r:8,n:'Coat hooks'},{r:9,n:'Extractor fan'},{r:10,n:'Sinks: taps, wall-mounted soap / towel dispensers'},
+  {r:11,n:'Toilet roll holder'},{r:12,n:'Towel dispenser'},{r:13,n:'Suspended ceilings'},
+  {r:14,n:'Shower hose / control knob / shower cubicle door'},{r:15,n:'Grab rails, waste pipes, bath taps'},
+  {r:16,n:'Fire bells / extinguisher brackets'},{r:17,n:'Mobile phone / device charger'},
+  {r:18,n:'Beds (turned on end / height-adjustable when raised)'},{r:19,n:'Hoisting systems'},
+  {r:20,n:'Handrails (corridors / staircases)'},{r:21,n:'Cupboards: handles, rails'},
+  {r:22,n:'Toilet cistern handles'},{r:23,n:'Other (specify in description)'},
+];
+
+function def(k,v){if(!localStorage.getItem(k))localStorage.setItem(k,JSON.stringify(v));}
+def('sa','[]');def('sw','[]');
+def('sd',JSON.stringify(['Medicine & Unscheduled Care','Surgery & Clinical Services',"Children's, Young Persons & Women's Services",'Mental Health & Disability','Adult Community Services']));
+def('sdv',JSON.stringify([
+  {n:'Craigavon Area Hospital (CAH)',d:''},{n:'Daisy Hill Hospital (DHH)',d:''},{n:'South Tyrone Hospital (STH)',d:''},{n:'Lurgan Hospital',d:''},
+  {n:'Bluestone Unit (CAH)',d:'Mental Health & Disability'},{n:'Dorsy Treatment & Assessment Unit (CAH)',d:'Mental Health & Disability'},
+  {n:"Bocombra Children's Residential Home",d:"Children's, Young Persons & Women's Services"},
+  {n:"Cedar Grove Children's Residential Home",d:"Children's, Young Persons & Women's Services"},
+  {n:"Cherrygrove Children's Residential Home",d:"Children's, Young Persons & Women's Services"},
+  {n:"Oaktree Children's Residential Home",d:"Children's, Young Persons & Women's Services"},
+  {n:"Woodside Children's Residential Home",d:"Children's, Young Persons & Women's Services"},
+  {n:"Bluebell Children's Home (CWD)",d:"Children's, Young Persons & Women's Services"},
+  {n:'Oaklands Short Breaks Home (CWD)',d:"Children's, Young Persons & Women's Services"},
+  {n:'Crozier House (ACS)',d:'Adult Community Services'},{n:'Cloughreagh House (ACS)',d:'Adult Community Services'},
+  {n:'Slieve Roe (ACS)',d:'Adult Community Services'},{n:'Roxborough House (ACS)',d:'Adult Community Services'},
+]));
+def('se',JSON.stringify([
+  {n:'Ryan Kerr',l:'Craigavon & Banbridge',b:'CAH',p:'07342 066171'},
+  {n:'Chris Horisk',l:'Craigavon & Banbridge',b:'CAH',p:'07920 875597'},
+  {n:'Marc Branagan',l:'Newry & Mourne',b:'DHH',p:'07776 517025'},
+  {n:'Mark Williamson',l:'Dungannon',b:'STH',p:'07585 981259'},
+  {n:'Justine Crilly',l:'Armagh',b:'St Lukes',p:'07918 677855'},
+]));
+function ld(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+let AS=ld('sa'),WK=ld('sw'),ragV='',viewId=null,CH={};
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+function showView(v){
+  ['dashboard','new','weekly','history','trends','settings'].forEach(id=>{
+    document.getElementById('view-'+id).style.display='none';
+    const n=document.getElementById('nav-'+id);if(n)n.classList.remove('on');
+  });
+  document.getElementById('view-'+v).style.display='';
+  const n=document.getElementById('nav-'+v);if(n)n.classList.add('on');
+  if(v==='dashboard')loadAndRenderDash();
+  if(v==='history'){loadFromSP().then(()=>renderHist());}
+  if(v==='trends'){loadFromSP().then(()=>renderTrends());}
+  if(v==='settings')renderSettings();
+  if(v==='weekly'){loadAndRenderWeekly();}
+  if(v==='new')initForm();
+}
+
+function initForm(){
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  ragV='';
+  document.querySelectorAll('#rag-sel .ro').forEach(r=>r.className='ro');
+  document.getElementById('rag-notice').style.display='none';
+  document.getElementById('lpb').innerHTML='';
+  document.getElementById('rev-body').innerHTML='';
+  popDirs();addLPRow();addLPRow();addReviewRow();
+}
+
+function popDirs(){
+  const dirs=ld('sd');
+  const sel=document.getElementById('f-dir');
+  sel.innerHTML='<option value="">Select directorate</option>'+dirs.map(d=>`<option>${d}</option>`).join('');
+  filterDivs();
+}
+function filterDivs(){
+  const d=document.getElementById('f-dir').value;
+  const divs=ld('sdv').filter(x=>!d||!x.d||x.d===d);
+  document.getElementById('f-div').innerHTML='<option value="">Select hospital / site</option>'+divs.map(x=>`<option>${x.n}</option>`).join('');
+}
+
+function setRag(v,el){
+  ragV=v;
+  document.querySelectorAll('#rag-sel .ro').forEach(r=>r.className='ro');
+  el.className='ro s-'+v;
+  document.getElementById('rag-notice').style.display=(v==='red'||v==='amb')?'':'none';
+}
+
+function rrc(rr){
+  if(rr>=15)return{bg:'#FEE2E2',c:'#B91C1C'};
+  if(rr>=8)return{bg:'#FEF3C7',c:'#B45309'};
+  if(rr>=4)return{bg:'#FEF9C3',c:'#713F12'};
+  return{bg:'#DCFCE7',c:'#166534'};
+}
+
+let lpIdx=0;
+function addLPRow(d){
+  const tb=document.getElementById('lpb');
+  const idx=lpIdx++;d=d||{};
+  const ro=LPR.map(r=>`<option value="${r.r}" ${d.lpR==r.r?'selected':''}>${r.r}. ${r.n}</option>`).join('');
+  const tr=document.createElement('tr');tr.dataset.idx=idx;
+  tr.innerHTML=`
+    <td><select onchange="ragSel(this)" style="width:60px;font-size:11px;"><option value="">-</option><option value="red" ${d.rag==='red'?'selected':''} style="color:#B91C1C;">Red</option><option value="amb" ${d.rag==='amb'?'selected':''} style="color:#B45309;">Amber</option><option value="grn" ${d.rag==='grn'?'selected':''} style="color:#166534;">Green</option></select></td>
+    <td><select style="width:133px;font-size:11px;"><option value="">Select...</option>${ro}</select></td>
+    <td><input type="text" placeholder="e.g. Bedroom 3 / En-suite" value="${d.room||''}" style="width:70px;font-size:11px;"></td>
+    <td><select style="width:53px;font-size:11px;"><option ${d.wb==='Yes'?'selected':''}>Yes</option><option ${d.wb==='No'?'selected':''}>No</option><option ${d.wb==='Unsure'?'selected':''}>Unsure</option></select></td>
+    <td><select style="width:58px;font-size:11px;"><option value="" ${!d.obs?'selected':''}>-</option><option ${d.obs==='Direct'?'selected':''}>Direct</option><option ${d.obs==='Vision panel'?'selected':''}>Vision panel</option><option ${d.obs==='Intermittent'?'selected':''}>Intermittent</option><option ${d.obs==='Unsupervised'?'selected':''}>Unsupervised</option></select></td>
+    <td><textarea placeholder="Specific location and nature of ligature point..." style="width:143px;">${d.desc||''}</textarea></td>
+    <td><textarea placeholder="Controls already in place..." style="width:143px;">${d.ctrl||''}</textarea></td>
+    <td><input type="number" class="si lik" min="1" max="5" value="${d.l||''}" oninput="calcRR(this)" placeholder="1-5"></td>
+    <td><input type="number" class="si imp" min="1" max="5" value="${d.i||''}" oninput="calcRR(this)" placeholder="1-5"></td>
+    <td><div class="rrd" id="rrd-${idx}">${d.rr||'-'}</div></td>
+    <td><textarea placeholder="Action required (incl. resource / cost implications and reporting)..." style="width:143px;">${d.act||''}</textarea></td>
+    <td><input type="text" placeholder="Name / role" value="${d.ace||''}" style="width:90px;font-size:11px;"></td>
+    <td><input type="date" value="${d.tgt||''}" style="width:86px;"></td>
+    <td><input type="date" value="${d.done||''}" style="width:78px;" title="Actual date completed"></td>
+    <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" class="si pal" min="1" max="5" placeholder="L" value="${d.pal||''}" oninput="calcPA(this)" style="width:30px;"><span style="font-size:9px;color:var(--txm);">x</span><input type="number" class="si pai" min="1" max="5" placeholder="I" value="${d.pai||''}" oninput="calcPA(this)" style="width:30px;"><div class="rrd" id="par-${idx}" style="width:26px;">${d.par||'-'}</div></div></td>
+    <td><button class="btn btn-s btn-del" onclick="this.closest('tr').remove()">x</button></td>
+  `;
+  tb.appendChild(tr);
+  if(d.rr)setRRd(idx,d.rr);
+  if(d.par)setPAd(idx,d.par);
+}
+function ragSel(s){const m={red:'#B91C1C',amb:'#B45309',grn:'#166534'};s.style.color=m[s.value]||'inherit';}
+function calcRR(inp){
+  const tr=inp.closest('tr');
+  const l=parseFloat(tr.querySelector('.lik').value)||0,i=parseFloat(tr.querySelector('.imp').value)||0;
+  setRRd(tr.dataset.idx,l&&i?l*i:null);
+}
+function setRRd(idx,rr){
+  const el=document.getElementById('rrd-'+idx);if(!el)return;
+  if(rr){const c=rrc(rr);el.textContent=rr;el.style.background=c.bg;el.style.color=c.c;}
+  else{el.textContent='-';el.style.background='transparent';el.style.color='var(--txm)';}
+}
+function calcPA(inp){
+  const tr=inp.closest('tr');
+  const l=parseFloat(tr.querySelector('.pal').value)||0,i=parseFloat(tr.querySelector('.pai').value)||0;
+  setPAd(tr.dataset.idx,l&&i?l*i:null);
+}
+function setPAd(idx,r){
+  const el=document.getElementById('par-'+idx);if(!el)return;
+  if(r){const c=rrc(r);el.textContent=r;el.style.background=c.bg;el.style.color=c.c;}
+  else{el.textContent='-';el.style.background='transparent';el.style.color='var(--txm)';}
+}
+
+function addReviewRow(d){
+  const tb=document.getElementById('rev-body');d=d||{};
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><input type="date" value="${d.rdate||''}" style="width:98px;"></td>
+    <td><input type="text" placeholder="e.g. 2" value="${d.lpref||''}" style="width:78px;font-size:11px;"></td>
+    <td><textarea placeholder="Action undertaken..." style="width:218px;min-height:36px;">${d.action||''}</textarea></td>
+    <td><input type="text" placeholder="Name" value="${d.actionee||''}" style="width:108px;font-size:11px;"></td>
+    <td><input type="text" placeholder="Job title / designation" value="${d.desig||''}" style="width:118px;font-size:11px;"></td>
+    <td><textarea placeholder="Progress update..." style="width:198px;min-height:36px;">${d.progress||''}</textarea></td>
+    <td><button class="btn btn-s btn-del" onclick="this.closest('tr').remove()">x</button></td>
+  `;
+  tb.appendChild(tr);
+}
+
+function collectForm(){
+  const rows=[];
+  document.querySelectorAll('#lpb tr').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    const l=parseFloat(tds[7].querySelector('input').value)||null,i=parseFloat(tds[8].querySelector('input').value)||null;
+    const pal=parseFloat(tds[14].querySelector('.pal').value)||null,pai=parseFloat(tds[14].querySelector('.pai').value)||null;
+    const ls=tds[1].querySelector('select');
+    rows.push({rag:tds[0].querySelector('select').value,lpR:ls.value,lpN:ls.options[ls.selectedIndex]?.text||'',room:tds[2].querySelector('input').value,wb:tds[3].querySelector('select').value,obs:tds[4].querySelector('select').value,desc:tds[5].querySelector('textarea').value,ctrl:tds[6].querySelector('textarea').value,l,i,rr:l&&i?l*i:null,act:tds[10].querySelector('textarea').value,ace:tds[11].querySelector('input').value,tgt:tds[12].querySelector('input').value,done:tds[13].querySelector('input').value,pal,pai,par:pal&&pai?pal*pai:null});
+  });
+  const revRows=[];
+  document.querySelectorAll('#rev-body tr').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    revRows.push({rdate:tds[0].querySelector('input').value,lpref:tds[1].querySelector('input').value,action:tds[2].querySelector('textarea').value,actionee:tds[3].querySelector('input').value,desig:tds[4].querySelector('input').value,progress:tds[5].querySelector('textarea').value});
+  });
+  const ps=[],pi=[];
+  document.querySelectorAll('#f-persons input:checked').forEach(c=>ps.push(c.value));
+  document.querySelectorAll('#f-pi input:checked').forEach(c=>pi.push(c.value));
+  return{
+    id:Date.now(),date:document.getElementById('f-date').value,
+    dir:document.getElementById('f-dir').value,div:document.getElementById('f-div').value,
+    ward:document.getElementById('f-ward').value,assessor:document.getElementById('f-assessor').value,
+    reason:document.getElementById('f-reason').value,svc:document.getElementById('f-svc').value,
+    persons:ps,datix:document.querySelector('input[name="datix"]:checked')?.value||'No',
+    datixDetail:document.getElementById('f-datix').value,
+    env:{vision:document.getElementById('e-vision').value,solid:document.getElementById('e-solid').value,thumb:document.getElementById('e-thumb').value,keys:document.getElementById('e-keys').value,cctv:document.getElementById('e-cctv').value,floorplan:document.getElementById('e-floorplan').value,access:document.getElementById('e-access').value,alarm:document.getElementById('e-alarm').value,comms:document.getElementById('e-comms').value,door:document.getElementById('e-door').value,cutters:document.getElementById('e-cutters').value,notes:document.getElementById('e-notes').value},
+    lps:rows,overallRag:ragV,
+    ctype:document.getElementById('f-ctype').value,cloc:document.getElementById('f-cloc').value,
+    incident:document.getElementById('f-incident').value,datixRef:document.getElementById('f-datix-ref').value,
+    piActions:pi,piNotes:document.getElementById('f-pi-notes').value,
+    reviews:revRows,
+    esc:document.querySelector('input[name="esc"]:checked')?.value||'No',escDate:document.getElementById('f-escdate').value,
+    riskReg:document.querySelector('input[name="rr"]:checked')?.value||'No',rRef:document.getElementById('f-rref').value,
+    sentHS:document.querySelector('input[name="sent"]:checked')?.value||'No',
+    tnf:document.querySelector('input[name="tnf"]:checked')?.value||'No',
+    shared:document.querySelector('input[name="shared"]:checked')?.value||'No',
+    cutInd:document.querySelector('input[name="cutind"]:checked')?.value||'No',
+    approver:document.getElementById('f-approver').value,appDate:document.getElementById('f-appdate').value,
+    notes:document.getElementById('f-notes').value,
+  };
+}
+
+async function saveA(){
+  const d=collectForm();
+  if(!d.ward||!d.date){toast('Please enter ward name and date.');return;}
+  if(!d.overallRag){toast('Please select an overall RAG rating (Section 4).');return;}
+  try {
+    const saved = await saveToSP(d);
+    AS.unshift(saved);
+    try{sv('sa',AS);}catch(e){}
+    toast('Assessment saved to SharePoint.');
+    showView('dashboard');
+  } catch(e) {
+    toast('Save failed: ' + e.message);
+  }
+}
+
+async function loadAndRenderDash(){
+  await loadFromSP();
+  await loadWeeklyFromSP();
+  renderDash();
+}
+function renderDash(){
+  const total=AS.length,red=AS.filter(a=>a.overallRag==='red').length,amb=AS.filter(a=>a.overallRag==='amb').length,grn=AS.filter(a=>a.overallRag==='grn').length;
+  let od=0;AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.act&&lp.tgt&&!lp.done&&new Date(lp.tgt)<new Date())od++;}));
+  document.getElementById('ds-stats').innerHTML=`<div class="sc"><div class="sv">${total}</div><div class="sl">Total assessments</div></div><div class="sc" style="border-top:3px solid var(--red);"><div class="sv" style="color:var(--red);">${red}</div><div class="sl">Red (high risk)</div></div><div class="sc" style="border-top:3px solid var(--amb);"><div class="sv" style="color:var(--amb);">${amb}</div><div class="sl">Amber (medium risk)</div></div><div class="sc" style="border-top:3px solid var(--red);"><div class="sv" style="color:var(--red);">${od}</div><div class="sl">Overdue actions</div></div>`;
+  const rec=document.getElementById('ds-recent');
+  rec.innerHTML=AS.length?AS.slice(0,6).map(a=>`<div class="ar"><div class="ai"><div class="an">${a.ward||'Unnamed'}</div><div class="am">${a.div||a.dir||''} &middot; ${a.date} &middot; ${a.assessor||'-'}</div></div><span class="rag rag-${a.overallRag}"><span class="rd"></span>${(a.overallRag||'').toUpperCase()}</span><div class="aa"><button class="btn btn-o btn-s" onclick="viewA(${a.id})">View</button><button class="btn btn-o btn-s" onclick="doPDFid(${a.id})">PDF</button></div></div>`).join(''):'<div class="empty"><h3>No assessments yet</h3><p>Click New assessment to begin.</p></div>';
+  const acts=[];AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.act&&lp.tgt&&!lp.done&&new Date(lp.tgt)<new Date())acts.push({ward:a.ward,lp:lp.lpN||'LP'+lp.lpR,act:lp.act,ace:lp.ace,tgt:lp.tgt,rr:lp.rr});}));
+  document.getElementById('ds-actions').innerHTML=acts.length?acts.slice(0,8).map(o=>`<div style="padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;"><div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;"><strong>${o.ward}</strong><span class="tag tag-red">Overdue</span>${o.rr?`<span class="tag" style="background:#F3F4F6;color:var(--tx);">RR: ${o.rr}</span>`:''}</div><div>${o.lp} &mdash; ${o.act}</div><div style="color:var(--red);margin-top:2px;">Actionee: ${o.ace||'-'} &middot; Target: ${o.tgt}</div></div>`).join(''):'<p style="font-size:13px;color:var(--txm);">No overdue actions.</p>';
+  const c1=document.getElementById('cRag').getContext('2d');if(CH.rag)CH.rag.destroy();
+  CH.rag=new Chart(c1,{type:'doughnut',data:{labels:['Red','Amber','Green'],datasets:[{data:[red,amb,grn],backgroundColor:['#B91C1C','#B45309','#166534'],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},cutout:'62%',responsive:true,maintainAspectRatio:false}});
+  const cnt={};AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.lpR)cnt[lp.lpR]=(cnt[lp.lpR]||0)+1;}));
+  const srt=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const c2=document.getElementById('cLP').getContext('2d');if(CH.lp)CH.lp.destroy();
+  CH.lp=new Chart(c2,{type:'bar',data:{labels:srt.map(([r])=>{const f=LPR.find(x=>String(x.r)===String(r));return f?f.n.substring(0,34)+'...':'Ref '+r;}),datasets:[{data:srt.map(([,c])=>c),backgroundColor:'#6B3FA0',borderRadius:3}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
+}
+
+async function loadAndRenderWeekly(){
+  await loadWeeklyFromSP();
+  renderWeekly();
+}
+function renderWeekly(){
+  const el=document.getElementById('wk-list');
+  if(!WK.length){el.innerHTML='<div class="empty"><h3>No weekly checks logged yet</h3><p>Click "Log this week" to record an inspection check.</p></div>';return;}
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#F8F7FC;"><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:left;">Date</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:left;">Ward</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:left;">Checked by</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:center;">New risks?</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:center;">Damage?</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:center;">Cutters OK?</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);text-align:center;">Controls lost?</th><th style="padding:7px 8px;border-bottom:1px solid var(--bd);">Notes</th></tr></thead><tbody>${WK.map(w=>`<tr><td style="padding:6px 8px;border-bottom:1px solid var(--bd);">${w.date}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);">${w.ward}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);">${w.by}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">${w.risks==='Yes'?'<span class="tag tag-red">Yes</span>':'<span class="tag tag-grn">No</span>'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">${w.damage==='Yes'?'<span class="tag tag-red">Yes</span>':'<span class="tag tag-grn">No</span>'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">${w.cutters==='Yes'?'<span class="tag tag-grn">Yes</span>':w.cutters==='N/A'?'N/A':'<span class="tag tag-red">No</span>'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">${w.clost==='Yes'?'<span class="tag tag-red">Yes</span>':'<span class="tag tag-grn">No</span>'}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);">${w.notes||'-'}</td></tr>`).join('')}</tbody></table>`;
+}
+function openWM(){
+  document.getElementById('w-date').value=new Date().toISOString().slice(0,10);
+  const ws=[...new Set(AS.map(a=>a.ward).filter(Boolean))];
+  document.getElementById('w-ward').innerHTML='<option value="">Select ward</option>'+ws.map(w=>`<option>${w}</option>`).join('');
+  document.getElementById('wmod').style.display='flex';
+}
+function closeWM(){document.getElementById('wmod').style.display='none';}
+async function saveWC(){
+  const w={id:Date.now(),date:document.getElementById('w-date').value,ward:document.getElementById('w-ward').value,by:document.getElementById('w-by').value,risks:document.querySelector('input[name="wr"]:checked')?.value||'No',damage:document.querySelector('input[name="wd"]:checked')?.value||'No',cutters:document.querySelector('input[name="wc"]:checked')?.value||'Yes',clost:document.querySelector('input[name="wl"]:checked')?.value||'No',notes:document.getElementById('w-notes').value};
+  if(!w.ward||!w.date){toast('Please select ward and date.');return;}
+  try {
+    const saved = await saveWeeklyToSP(w);
+    WK.unshift(saved);
+    try{sv('sw',WK);}catch(e){}
+    closeWM();renderWeekly();toast('Weekly check saved to SharePoint.');
+  } catch(e) { toast('Save failed: '+e.message); }
+}
+
+async function loadAndRenderHist(){
+  await loadFromSP();
+  renderHist();
+}
+function renderHist(){
+  const el=document.getElementById('hist-list');
+  if(!AS.length){el.innerHTML='<div class="empty"><h3>No assessments yet</h3></div>';return;}
+  el.innerHTML=AS.map(a=>`<div class="ar"><div class="ai"><div class="an">${a.ward||'Unnamed'} <span class="tag tag-pu" style="margin-left:4px;">${a.reason||'Assessment'}</span></div><div class="am">${a.dir||''} &middot; ${a.div||''} &middot; ${a.date} &middot; Assessor: ${a.assessor||'-'} &middot; Approver: ${a.approver||'-'}</div><div style="margin-top:2px;font-size:11px;">${(a.lps||[]).length} ligature points &middot; ${(a.lps||[]).filter(l=>l.rag==='red').length} red &middot; ${(a.lps||[]).filter(l=>l.act).length} actions</div></div><span class="rag rag-${a.overallRag}"><span class="rd"></span>${(a.overallRag||'').toUpperCase()}</span><div class="aa"><button class="btn btn-o btn-s" onclick="viewA(${a.id})">View</button><button class="btn btn-o btn-s" onclick="doPDFid(${a.id})">PDF</button><button class="btn btn-s btn-del" onclick="delA(${a.id})">Delete</button></div></div>`).join('');
+}
+async function delA(id){
+  if(!confirm('Delete this assessment?'))return;
+  const a=AS.find(x=>x.id===id);
+  if(a && a.spId){try{await deleteFromSP(a.spId);}catch(e){toast('Delete from SharePoint failed: '+e.message);return;}}
+  AS=AS.filter(x=>x.id!==id);
+  try{sv('sa',AS);}catch(e){}
+  renderHist();toast('Deleted.');
+}
+
+function renderTrends(){
+  const srt=[...AS].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const c1=document.getElementById('cTrend').getContext('2d');if(CH.tr)CH.tr.destroy();
+  CH.tr=new Chart(c1,{type:'line',data:{labels:srt.map(a=>a.date),datasets:[{label:'Risk',data:srt.map(a=>({red:3,amb:2,grn:1})[a.overallRag]||0),borderColor:'#6B3FA0',backgroundColor:'rgba(107,63,160,.1)',fill:true,tension:.3,pointRadius:5}]},options:{scales:{y:{min:0,max:3,ticks:{callback:v=>['','Low','Med','High'][v]||''}},x:{ticks:{font:{size:9}}}},plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false}});
+  const cnt={};AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.lpR){const f=LPR.find(x=>String(x.r)===String(lp.lpR));cnt[f?.n||'Ref '+lp.lpR]=(cnt[f?.n||'Ref '+lp.lpR]||0)+1;}}));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const c2=document.getElementById('cTop').getContext('2d');if(CH.tp)CH.tp.destroy();
+  CH.tp=new Chart(c2,{type:'bar',data:{labels:top.map(([n])=>n.substring(0,24)+'...'),datasets:[{data:top.map(([,c])=>c),backgroundColor:'#C0006A',borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{stepSize:1}}},responsive:true,maintainAspectRatio:false}});
+  const od=[];AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.act&&lp.tgt&&!lp.done&&new Date(lp.tgt)<new Date())od.push({ward:a.ward,lp:lp.lpN,act:lp.act,ace:lp.ace,tgt:lp.tgt});}));
+  document.getElementById('tr-od').innerHTML=od.length?od.map(o=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;"><strong>${o.ward}</strong> &middot; ${o.lp||'-'}<br>${o.act}<br><span style="color:var(--red);">Actionee: ${o.ace||'-'} &middot; Target: ${o.tgt}</span></div>`).join(''):'<p style="font-size:13px;color:var(--txm);">No overdue actions.</p>';
+  const bw={};AS.forEach(a=>{if(!bw[a.ward])bw[a.ward]={red:0,amb:0,grn:0,last:null};bw[a.ward][a.overallRag]=(bw[a.ward][a.overallRag]||0)+1;if(!bw[a.ward].last)bw[a.ward].last=a.overallRag;});
+  document.getElementById('tr-wards').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#F8F7FC;"><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;">Ward</th><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">Total</th><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">Current RAG</th><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">Red</th><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">Amber</th><th style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">Green</th></tr></thead><tbody>${Object.entries(bw).map(([w,v])=>`<tr><td style="padding:6px 8px;border-bottom:1px solid var(--bd);">${w}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;">${(v.red||0)+(v.amb||0)+(v.grn||0)}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;"><span class="rag rag-${v.last}">${(v.last||'').toUpperCase()}</span></td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;color:var(--red);font-weight:600;">${v.red||0}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;color:var(--amb);font-weight:600;">${v.amb||0}</td><td style="padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;color:var(--grn);font-weight:600;">${v.grn||0}</td></tr>`).join('')}</tbody></table>`;
+  const gps={vision:0,solid:0,keys:0,cctv:0,alarm:0,cutters:0,floorplan:0};
+  const gn={vision:'Missing or partial vision panels in patient area doors',solid:'Solid doors without vision panels (beyond en-suites)',keys:'Staff override keys not confirmed for all rooms',cctv:'CCTV absent or partial in ward / communal areas',alarm:'Staff alarm systems absent or incomplete',cutters:'Ligature cutters not confirmed or weekly check outstanding',floorplan:'Floor plan (RAG colour-coded) absent or not current'};
+  AS.forEach(a=>{
+    if(!a.env)return;
+    if((a.env.vision||'').includes('No')||(a.env.vision||'').includes('Partial'))gps.vision++;
+    if((a.env.solid||'').includes('bedrooms')||(a.env.solid||'').includes('multiple'))gps.solid++;
+    if((a.env.keys||'').includes('Partial')||(a.env.keys||'').includes('No'))gps.keys++;
+    if((a.env.cctv||'').includes('No ')||(a.env.cctv||'').includes('partial'))gps.cctv++;
+    if((a.env.alarm||'').includes('No'))gps.alarm++;
+    if((a.env.cutters||'').includes('No')||(a.env.cutters||'').includes('not yet'))gps.cutters++;
+    if((a.env.floorplan||'').includes('No')||(a.env.floorplan||'').includes('requires'))gps.floorplan++;
+  });
+  document.getElementById('tr-env').innerHTML=Object.entries(gps).filter(([,v])=>v>0).map(([k,v])=>`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px;"><span class="tag tag-amb" style="white-space:nowrap;">${v} ward${v>1?'s':''}</span><span>${gn[k]||k}</span></div>`).join('')||'<p style="font-size:13px;color:var(--txm);">No environmental gaps flagged across current assessments.</p>';
+}
+
+function renderSettings(){
+  const dirs=ld('sd');
+  document.getElementById('s-dirs').innerHTML=dirs.map((d,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:13px;">${d}<button class="btn btn-s btn-del" onclick="rmDir(${i})">Remove</button></div>`).join('');
+  const divs=ld('sdv');
+  document.getElementById('s-divs').innerHTML=divs.map((d,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:13px;">${d.n}${d.d?`<span style="font-size:10px;color:var(--txm);margin-left:6px;">(${d.d})</span>`:''}<button class="btn btn-s btn-del" onclick="rmDiv(${i})">Remove</button></div>`).join('');
+  const dd=document.getElementById('si-dd');dd.innerHTML='<option value="">- All / unlinked -</option>'+dirs.map(d=>`<option>${d}</option>`).join('');
+  const ests=ld('se');
+  document.getElementById('s-ests').innerHTML=ests.map((e,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px;"><span><strong>${e.n}</strong> &middot; ${e.l} &middot; ${e.b} &middot; ${e.p}</span><button class="btn btn-s btn-del" onclick="rmEst(${i})">Remove</button></div>`).join('');
+}
+function addDir(){const v=document.getElementById('si-dir').value.trim();if(!v)return;const d=ld('sd');d.push(v);sv('sd',d);document.getElementById('si-dir').value='';renderSettings();toast('Directorate added.');}
+function rmDir(i){const d=ld('sd');d.splice(i,1);sv('sd',d);renderSettings();}
+function addDiv(){const v=document.getElementById('si-div').value.trim();if(!v)return;const d=ld('sdv');d.push({n:v,d:document.getElementById('si-dd').value});sv('sdv',d);document.getElementById('si-div').value='';renderSettings();toast('Hospital / site added.');}
+function rmDiv(i){const d=ld('sdv');d.splice(i,1);sv('sdv',d);renderSettings();}
+function addEst(){const n=document.getElementById('se-n').value.trim();if(!n)return;const e=ld('se');e.push({n,l:document.getElementById('se-l').value,b:document.getElementById('se-b').value,p:document.getElementById('se-p').value});sv('se',e);['se-n','se-l','se-b','se-p'].forEach(id=>document.getElementById(id).value='');renderSettings();toast('Estates officer added.');}
+function rmEst(i){const e=ld('se');e.splice(i,1);sv('se',e);renderSettings();}
+function expJSON(){const b=new Blob([JSON.stringify({assessments:AS,weekly:WK},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SHSCT_ligature_data_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Data exported.');}
+function clrAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;AS=[];WK=[];sv('sa',[]);sv('sw',[]);toast('All data cleared.');renderSettings();}
+
+function viewA(id){
+  const a=AS.find(x=>x.id===id);if(!a)return;viewId=id;
+  const RL={red:'RED - High risk',amb:'AMBER - Medium risk',grn:'GREEN - Low risk'};
+  const eRows=a.env?[['Vision panels in doors',a.env.vision,'Access / egress controls',a.env.access],['Solid doors without panels',a.env.solid,'Alarm systems',a.env.alarm],['Thumb locks',a.env.thumb,'Communication systems',a.env.comms],['Staff override keys',a.env.keys,'Anti-barricade door management',a.env.door],['CCTV coverage',a.env.cctv,'Ligature cutters confirmed',a.env.cutters],['Floor plan (RAG colour-coded)',a.env.floorplan,'Environmental notes',a.env.notes||'-']].map(([k1,v1,k2,v2])=>`<tr><td style="padding:4px 7px;border:1px solid #E5E7EB;font-weight:500;font-size:11px;">${k1}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:11px;">${v1||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-weight:500;font-size:11px;">${k2}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:11px;">${v2||'-'}</td></tr>`).join(''):'';
+  const lpR=(a.lps||[]).map(lp=>`<tr><td style="padding:4px 5px;border:1px solid #E5E7EB;"><span class="rag rag-${lp.rag}" style="font-size:9px;">${(lp.rag||'').toUpperCase()}</span></td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">${lp.lpN||lp.lpR||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.room||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.wb||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.obs||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.desc||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.ctrl||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;text-align:center;font-weight:700;">${lp.rr||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.act||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.ace||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.tgt||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;font-size:10px;">${lp.done||'-'}</td><td style="padding:4px 5px;border:1px solid #E5E7EB;text-align:center;">${lp.par||'-'}</td></tr>`).join('');
+  const revR=(a.reviews||[]).map(r=>`<tr><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.rdate||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.lpref||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.action||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.actionee||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.desig||'-'}</td><td style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">${r.progress||'-'}</td></tr>`).join('');
+  document.getElementById('vmod-c').innerHTML=`
+    <div style="background:linear-gradient(135deg,#3D1A6B,#6B3FA0,#C0006A);color:#fff;padding:12px 14px;border-radius:7px;margin-bottom:13px;"><h2 style="font-size:14px;font-weight:600;margin:0;">${a.ward||'Assessment'}</h2><p style="font-size:11px;opacity:.85;margin-top:2px;">${a.dir||''} &middot; ${a.div||''} &middot; ${a.date}</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px;font-size:12px;">
+      <div><strong>Assessor:</strong> ${a.assessor||'-'}</div><div><strong>Reason:</strong> ${a.reason||'-'}</div>
+      <div><strong>Approver:</strong> ${a.approver||'-'}</div><div><strong>Approved:</strong> ${a.appDate||'-'}</div>
+      <div><strong>Persons affected:</strong> ${(a.persons||[]).join(', ')||'-'}</div>
+      <div><strong>Datix incidents (12m):</strong> ${a.datix||'-'}${a.datixDetail?' - '+a.datixDetail:''}</div>
+      <div><strong>RA sent to H&S team:</strong> ${a.sentHS||'-'}</div><div><strong>Training needs form:</strong> ${a.tnf||'-'}</div>
+      <div><strong>Risk register:</strong> ${a.riskReg||'-'}${a.rRef?' ('+a.rRef+')':''}</div>
+      <div><strong>Escalated to AD:</strong> ${a.esc||'-'}${a.escDate?' ('+a.escDate+')':''}</div>
+      <div><strong>RA shared with staff / induction:</strong> ${a.shared||'-'}</div>
+      <div><strong>Cutter location at induction:</strong> ${a.cutInd||'-'}</div>
+    </div>
+    <div style="margin-bottom:9px;font-size:12px;"><strong>Service presentation:</strong> ${a.svc||'-'}</div>
+    <div style="margin-bottom:11px;padding:8px;border-radius:6px;background:${a.overallRag==='red'?'#FEE2E2':a.overallRag==='amb'?'#FEF3C7':'#DCFCE7'};font-size:13px;font-weight:600;">Overall RAG: ${RL[a.overallRag]||a.overallRag||'-'}</div>
+    <strong style="font-size:12px;display:block;margin-bottom:5px;">Environmental safety checklist</strong>
+    <div style="overflow-x:auto;margin-bottom:11px;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8F7FC;"><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">Item</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">Response</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">Item</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:10px;">Response</th></tr></thead><tbody>${eRows}</tbody></table></div>
+    <strong style="font-size:12px;display:block;margin-bottom:5px;">Ligature point assessment</strong>
+    <div style="overflow-x:auto;margin-bottom:11px;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8F7FC;"><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">RAG</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">LP ref</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Room</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Wt bearing</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Observation</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Description</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Controls</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">RR</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Further action</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Actionee</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Target</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Completed</th><th style="padding:4px 5px;border:1px solid #E5E7EB;font-size:9px;">Post-action RR</th></tr></thead><tbody>${lpR||'<tr><td colspan="13" style="padding:9px;text-align:center;color:#6B7280;font-size:11px;">No ligature points recorded.</td></tr>'}</tbody></table></div>
+    ${(a.reviews||[]).length?`<strong style="font-size:12px;display:block;margin-bottom:5px;">Ward manager follow-up & review</strong><div style="overflow-x:auto;margin-bottom:11px;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#F8F7FC;"><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">Review date</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">LP ref</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">Action undertaken</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">Actionee</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">Designation</th><th style="padding:4px 7px;border:1px solid #E5E7EB;font-size:9px;">Progress update</th></tr></thead><tbody>${revR}</tbody></table></div>`:''}
+    ${a.ctype?`<div style="font-size:12px;margin-bottom:5px;"><strong>Rescue cutters:</strong> ${a.ctype}${a.cloc?' - '+a.cloc:''}</div>`:''}
+    ${a.incident&&a.incident!=='No'?`<div style="font-size:12px;margin-bottom:5px;"><strong>Incident since last RA:</strong> ${a.incident}${a.datixRef?' - DATIX: '+a.datixRef:''}</div>`:''}
+    ${(a.piActions||[]).length?`<div style="font-size:12px;margin-bottom:5px;"><strong>Post-incident actions:</strong> ${a.piActions.join(' | ')}</div>`:''}
+    ${a.piNotes?`<div style="font-size:12px;margin-bottom:5px;"><strong>Post-incident notes:</strong> ${a.piNotes}</div>`:''}
+    ${a.notes?`<div style="font-size:12px;"><strong>Additional notes:</strong> ${a.notes}</div>`:''}
+  `;
+  document.getElementById('vmod').style.display='flex';
+}
+function closeM(){document.getElementById('vmod').style.display='none';}
+function doPDF(){doPDFid(viewId);}
+function doPDFid(id){
+  const a=AS.find(x=>x.id===id);if(!a){toast('Assessment not found.');return;}
+  const {jsPDF}=window.jspdf;
+  if(!jsPDF){toast('PDF library not loaded.');return;}
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const PW=277,LM=10;
+
+  // Header
+  doc.setFillColor(61,26,107);doc.rect(0,0,297,22,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
+  doc.text('SHSCT Ligature Risk Assessment',LM,9);
+  doc.setFontSize(8);doc.setFont(undefined,'normal');
+  doc.text('Southern Health & Social Care Trust - Management of Self Harm through the use of Ligatures (June 2026 - SGN-125)',LM,15);
+  doc.text('Generated: '+new Date().toLocaleDateString('en-GB'),PW,15,{align:'right'});
+
+  let y=27;
+  doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont(undefined,'bold');
+  doc.text((a.ward||'Assessment')+' - Ligature Risk Assessment',LM,y);y+=5;
+  doc.setFontSize(8);doc.setFont(undefined,'normal');doc.setTextColor(80,80,80);
+  doc.text(`${a.dir||''} - ${a.div||''} - Date: ${a.date} - Assessor: ${a.assessor||'-'} - Approver: ${a.approver||'-'} (${a.appDate||'-'})`,LM,y);y+=5;
+  doc.setTextColor(20,20,20);
+
+  // Section 1 details table
+  doc.autoTable({startY:y,margin:{left:LM,right:10},
+    head:[['Field','Response','Field','Response']],
+    body:[
+      ['Reason for assessment',a.reason||'-','Persons affected',(a.persons||[]).join(', ')||'-'],
+      ['Datix incidents (12m)',a.datix||'-','Datix detail / learning',a.datixDetail||'-'],
+      ['Escalated to Line Manager / AD',(a.esc||'-')+(a.escDate?' ('+a.escDate+')':''),'Risk register',(a.riskReg||'-')+(a.rRef?' ('+a.rRef+')':'')],
+      ['RA sent to H&S team',a.sentHS||'-','Training needs form submitted',a.tnf||'-'],
+      ['RA shared with staff / induction',a.shared||'-','Cutter location at induction',a.cutInd||'-'],
+      ['Rescue cutter type',a.ctype||'-','Cutter storage location',a.cloc||'-'],
+      ['Incident since last RA',a.incident||'-','DATIX ref',a.datixRef||'-'],
+    ],
+    styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},
+    headStyles:{fillColor:[107,63,160],textColor:255,fontStyle:'bold',fontSize:7.5},
+    columnStyles:{0:{fontStyle:'bold',cellWidth:36},1:{cellWidth:74},2:{fontStyle:'bold',cellWidth:36},3:{cellWidth:74}},
+    theme:'grid'
+  });
+  y=doc.lastAutoTable.finalY+3;
+
+  if(a.svc){
+    if(y>170){doc.addPage();y=15;}
+    doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Service presentation:',LM,y);y+=4;
+    doc.setFont(undefined,'normal');const sl=doc.splitTextToSize(a.svc,PW-20);doc.text(sl,LM,y);y+=sl.length*3.5+3;
+  }
+
+  // Post-incident actions
+  if((a.piActions||[]).length||(a.piNotes&&a.piNotes.trim())){
+    if(y>165){doc.addPage();y=15;}
+    const piText='Post-incident actions: '+(a.piActions||[]).join(' | ')+(a.piNotes?'\nNotes: '+a.piNotes:'');
+    const psl=doc.splitTextToSize(piText,PW-20);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text(psl,LM,y);y+=psl.length*3.5+3;
+  }
+
+  // Overall RAG band
+  if(y>165){doc.addPage();y=15;}
+  const rc={red:[185,28,28],amb:[180,83,9],grn:[22,101,52]}[a.overallRag]||[100,100,100];
+  doc.setFillColor(...rc);doc.rect(LM,y,PW-20,8,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont(undefined,'bold');
+  doc.text('Overall risk rating: '+({red:'RED - High risk',amb:'AMBER - Medium risk',grn:'GREEN - Low risk'}[a.overallRag]||'-'),LM+3,y+5.5);
+  y+=11;doc.setTextColor(20,20,20);
+
+  // Environmental checklist table
+  if(a.env){
+    if(y>160){doc.addPage();y=15;}
+    doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Environmental safety checklist',LM,y);y+=2;
+    doc.autoTable({startY:y,margin:{left:LM,right:10},
+      head:[['Item','Response','Item','Response']],
+      body:[
+        ['Vision panels in doors',a.env.vision||'-','Access / egress controls',a.env.access||'-'],
+        ['Solid doors without panels',a.env.solid||'-','Staff alarm systems',a.env.alarm||'-'],
+        ['Thumb locks in rooms',a.env.thumb||'-','Communication systems',a.env.comms||'-'],
+        ['Staff override keys',a.env.keys||'-','Anti-barricade door management',a.env.door||'-'],
+        ['CCTV coverage',a.env.cctv||'-','Ligature cutters (weekly checked)',a.env.cutters||'-'],
+        ['Floor plan (RAG colour-coded)',a.env.floorplan||'-','Environmental notes',a.env.notes||'-'],
+      ],
+      styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},
+      headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},
+      columnStyles:{0:{fontStyle:'bold',cellWidth:44},1:{cellWidth:66},2:{fontStyle:'bold',cellWidth:44},3:{cellWidth:66}},
+      theme:'grid'
+    });
+    y=doc.lastAutoTable.finalY+3;
+  }
+
+  // Ligature points table
+  if(y>150){doc.addPage();y=15;}
+  doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ligature point assessment (room by room)',LM,y);y+=2;
+  const lpBd=(a.lps||[]).map(lp=>[
+    (lp.rag||'-').toUpperCase(),
+    lp.lpN?lp.lpN.substring(0,40):('Ref '+(lp.lpR||'-')),
+    lp.room||'-',lp.wb||'-',lp.obs||'-',
+    lp.desc||'-',lp.ctrl||'-',
+    String(lp.l||'-'),String(lp.i||'-'),String(lp.rr||'-'),
+    lp.act||'-',lp.ace||'-',lp.tgt||'-',lp.done||'-',String(lp.par||'-'),
+  ]);
+  doc.autoTable({startY:y,margin:{left:LM,right:10},
+    head:[['RAG area','Ligature point','Room','Wt bearing','Obs. level','Description','Existing controls','L','I','RR','Further action','Actionee','Target date','Actual completed','Post-action RR']],
+    body:lpBd.length?lpBd:[['No ligature points recorded','','','','','','','','','','','','','','']],
+    styles:{fontSize:6.5,cellPadding:1.6,overflow:'linebreak',valign:'top'},
+    headStyles:{fillColor:[107,63,160],textColor:255,fontStyle:'bold',fontSize:6.5},
+    columnStyles:{
+      0:{cellWidth:12},1:{cellWidth:38},2:{cellWidth:14},3:{cellWidth:13},4:{cellWidth:14},
+      5:{cellWidth:30},6:{cellWidth:30},7:{cellWidth:7},8:{cellWidth:7},9:{cellWidth:9},
+      10:{cellWidth:32},11:{cellWidth:20},12:{cellWidth:16},13:{cellWidth:16},14:{cellWidth:13},
+    },
+    theme:'grid',
+    didParseCell:(d)=>{
+      if(d.section==='body'){
+        if(d.column.index===0){const v=(d.cell.raw||'').toUpperCase();if(v==='RED')d.cell.styles.fillColor=[254,226,226];else if(v==='AMB'||v==='AMBER')d.cell.styles.fillColor=[254,243,199];else if(v==='GRN'||v==='GREEN')d.cell.styles.fillColor=[220,252,231];}
+        if(d.column.index===9){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}
+        if(d.column.index===14){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}
+      }
+    }
+  });
+  y=doc.lastAutoTable.finalY+3;
+
+  // Ward manager review table (if any)
+  if((a.reviews||[]).filter(r=>r.action||r.rdate).length){
+    if(y>165){doc.addPage();y=15;}
+    doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ward manager / facility manager follow-up and review',LM,y);y+=2;
+    doc.autoTable({startY:y,margin:{left:LM,right:10},
+      head:[['Review date','LP ref','Action undertaken','Actionee','Designation','Progress update']],
+      body:a.reviews.filter(r=>r.action||r.rdate).map(r=>[r.rdate||'-',r.lpref||'-',r.action||'-',r.actionee||'-',r.desig||'-',r.progress||'-']),
+      styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},
+      headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},
+      columnStyles:{0:{cellWidth:22},1:{cellWidth:16},2:{cellWidth:70},3:{cellWidth:30},4:{cellWidth:36},5:{cellWidth:66}},
+      theme:'grid'
+    });
+    y=doc.lastAutoTable.finalY+3;
+  }
+
+  if(a.notes&&a.notes.trim()){
+    if(y>185){doc.addPage();y=15;}
+    doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Additional notes:',LM,y);y+=4;
+    doc.setFont(undefined,'normal');const nl=doc.splitTextToSize(a.notes,PW-20);doc.text(nl,LM,y);
+  }
+
+  // Footer on every page
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);doc.setFontSize(6.5);doc.setTextColor(140,140,140);
+    doc.text('Return completed form to: ligature.safety@southerntrust.hscni.net  |  Training needs: safetyintervention.training@southerntrust.hscni.net  |  SHSCT Policy - Management of Self Harm through the use of Ligatures (June 2026 - SGN-125)  |  Page '+i+' of '+pages,LM,202);
+  }
+
+  doc.save('SHSCT_LigatureRA_'+(a.ward||'Assessment').replace(/[^a-zA-Z0-9_]/g,'_')+'_'+a.date+'.pdf');
+  toast('PDF exported successfully.');
+}
+
+// Seed demo data if nothing in storage
+function seedIfEmpty(){if(AS.length)return;
+  AS=[
+    {id:1700000001,date:'2026-05-12',dir:'Mental Health & Disability',div:'Bluestone Unit (CAH)',ward:'Bluestone Acute Ward',assessor:"J. O'Hare, Ward Manager",reason:'Annual review',svc:'20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation capacity available.',persons:['Patient','Employee'],datix:'Yes',datixDetail:'1 ligature attempt using belt over door handle. No injury. Learning: anti-ligature handles required.',env:{vision:'Yes - most patient areas',solid:'Yes - en-suites / toilets only',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Yes - on resuscitation trolley, weekly checked',notes:'En-suite thumb locks remain a concern. Doors without vision panels in en-suites need ongoing risk management.'},lps:[
+      {rag:'red',lpR:2,lpN:'Doors: handles, hinges, door closers',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'En-suite bathroom door handle - solid door, no vision panel. Standard lever type, weight bearing.',ctrl:'Door handle reviewed - standard, not anti-ligature.',l:4,i:5,rr:20,act:'Replace with anti-ligature lever handle. Estates work order raised.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'red',lpR:14,lpN:'Shower hose / control knob / shower cubicle door',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'Shower hose in en-suite - weight bearing when fixed to rail.',ctrl:'Standard hose - not anti-ligature type.',l:4,i:5,rr:20,act:'Replace shower hoses with breakaway anti-ligature type.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'amb',lpR:3,lpN:'Curtain rail systems (incl. suspended rails / shower curtains) / bedrails',room:'Bedrooms',wb:'No',obs:'Vision panel',desc:'Bedroom curtain track - suspended type. Anti-ligature track fitted.',ctrl:'Anti-ligature curtain rail installed. Weekly tested.',l:2,i:5,rr:10,act:'Confirm installation record with Estates. Re-test and document.',ace:'Ward Manager',tgt:'2026-06-15',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:10,lpN:'Sinks: taps, wall-mounted soap / towel dispensers',room:'Communal lounge',wb:'No',obs:'Direct',desc:'Wall mounted soap dispenser - collapsible type.',ctrl:'Collapsible dispensers fitted. Weekly checked.',l:1,i:3,rr:3,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'red',ctype:'2 x LC1 + 1 x Wire cutter (higher risk areas)',cloc:'Bottom compartment of resuscitation trolley, Bluestone ward station',incident:'Yes - no injury',datixRef:'IR1-2026-00441',piActions:['Scene secured / forensic evidence preserved','Doctor informed','Vital signs / physical observations taken','Site Manager / Senior Nurse informed','Family / next of kin informed','Documented in patient notes','Observation level reviewed and recorded in notes','Level of risk assessed and recorded in notes','DATIX completed and reference recorded','Staff hot debrief provided','Ligature cutter replaced immediately'],piNotes:'Ligature used was a belt. Ligature / anchor point was a door handle. Patient transferred to PICU. Debrief held same shift. Cutters replaced immediately.',reviews:[{rdate:'2026-05-20',lpref:'2',action:'Estates work order raised for anti-ligature door handles (all en-suites)',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Work order accepted. Installation scheduled 28/06/2026.'},{rdate:'2026-05-20',lpref:'14',action:'Anti-ligature shower hoses ordered and delivery confirmed',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Delivery expected 15/06/2026. Installation to follow.'}],esc:'Yes',escDate:'2026-05-13',riskReg:'Yes',rRef:'MHD-2026-047',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'Dr A. McAuley, Consultant Psychiatrist',appDate:'2026-05-14',notes:'Training needs form submitted. 2-yearly refresher training for all core staff due Nov 2026.'},
+    {id:1700000002,date:'2026-04-03',dir:"Children's, Young Persons & Women's Services",div:"Cedar Grove Children's Residential Home",ward:'Cedar Grove Residential Home',assessor:'M. Quinn, Head of Service',reason:'Initial',svc:"6-bed children's residential home. Ages 12-17. 24hr staffing. Bedroom doors have vision panels. Communal lounge and dining areas. Individual risk assessments in place for each resident.",persons:['Client','Employee'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - requires updating',access:'Yes - partial controls',alarm:'Yes - personal alarms only',comms:'Yes - mobile phones only',door:'Not applicable',cutters:'Yes - secured central location, weekly checked',notes:'Alarm coverage to be extended to upper residential floors. Floor plan to be updated.'},lps:[
+      {rag:'amb',lpR:8,lpN:'Coat hooks',room:'Bedrooms',wb:'Yes',obs:'Vision panel',desc:'Fixed metal coat hook rear of bedroom door.',ctrl:'Standard coat hooks - weight bearing, not anti-ligature.',l:3,i:4,rr:12,act:'Replace with anti-ligature coat hooks (breakaway type).',ace:'Estates - CAH',tgt:'2026-06-30',done:'',pal:null,pai:null,par:null},
+      {rag:'amb',lpR:17,lpN:'Mobile phone / device charger',room:'Bedrooms',wb:'No',obs:'Intermittent',desc:'Charging cables in bedrooms - variable lengths.',ctrl:'Cable management reviewed. Length checked by staff.',l:2,i:4,rr:8,act:'Move charging to supervised communal area only. Remove bedroom cables.',ace:'M. Quinn',tgt:'2026-04-17',done:'2026-04-17',pal:1,pai:4,par:4},
+      {rag:'grn',lpR:5,lpN:'Radiators',room:'All areas',wb:'No',obs:'Direct',desc:'Panel radiators throughout - standard housing with covers.',ctrl:'Radiator covers fitted. No exposed pipework.',l:1,i:2,rr:2,act:'None required. Review at next annual assessment.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'amb',ctype:'3 x LC1 cutters',cloc:'Secure cabinet in staff office, ground floor. Communicated at induction.',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[{rdate:'2026-04-18',lpref:'17',action:'Bedroom charging cables removed. Communal charging station installed in lounge.',actionee:'M. Quinn',desig:'Head of Service',progress:'Completed 17/04/2026. Action closed. Post-action RR: 1x4=4.'}],esc:'Yes',escDate:'2026-04-05',riskReg:'Yes',rRef:'CYPWS-2026-011',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'P. Dolan, Assistant Director',appDate:'2026-04-10',notes:'Alarm extension to upper floors to be costed and included in Estates plan Q3 2026. Floor plan to be updated to reflect communal charging point.'},
+    {id:1700000003,date:'2026-03-18',dir:'Medicine & Unscheduled Care',div:'Craigavon Area Hospital (CAH)',ward:'Emergency Department',assessor:'B. McConville, Clinical Nurse Manager',reason:'Annual review',svc:'High-acuity ED. Resus, majors, minors, triage areas. High staff-to-patient ratio. No unsupervised patient areas. 24hr consultant cover. High staff movement throughout.',persons:['Patient','Employee','Visitor'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'No thumb locks fitted',keys:'Yes - all rooms',cctv:'Yes - full coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Not applicable (GREEN area)',notes:''},lps:[
+      {rag:'grn',lpR:1,lpN:'Windows: catches / frames / blinds',room:'All clinical areas',wb:'No',obs:'Direct',desc:'All windows - window restrictors fitted.',ctrl:'Restrictors in place throughout. Tested annually.',l:1,i:3,rr:3,act:'Confirm restrictor test dates with Estates.',ace:'C. Horisk, Estates',tgt:'2026-09-18',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:16,lpN:'Fire bells / extinguisher brackets',room:'Entrances',wb:'No',obs:'Direct',desc:'Wall-mounted fire extinguisher brackets at clinical entrances. At height.',ctrl:'Brackets at height - not easily accessible from floor level.',l:1,i:2,rr:2,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'grn',ctype:'Not applicable (GREEN area)',cloc:'',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[],esc:'No',escDate:'',riskReg:'No',rRef:'',sentHS:'Yes',tnf:'No',shared:'Yes',cutInd:'No',approver:'C. Harron, Operational Manager',appDate:'2026-03-22',notes:'Low risk area - high staff presence at all times. Review in 12 months or following any incident. Cutters not applicable.'},
+  ];
+  try{sv('sa',AS);}catch(e){}
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  popDirs();
+  setStatus('Signing in to Microsoft 365...');
+  try {
+    await msalInstance.initialize();
+    // Handle redirect if coming back from login
+    await msalInstance.handleRedirectPromise();
+    await getToken();
+    setStatus('Connected as ' + (currentUser||'user') + ' ✓', 'green');
+    setTimeout(()=>setStatus(''), 3000);
+    await loadAndRenderDash();
+  } catch(e) {
+    setStatus('Sign-in failed: ' + e.message + ' - running in offline mode', 'red');
+    seedIfEmpty();
+    renderDash();
+  }
+});
+</script>
+</body>
+</html>
