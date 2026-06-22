@@ -7,7 +7,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script>
+// Load MSAL dynamically to ensure correct version
+(function(){
+  var s=document.createElement('script');
+  s.src='https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js';
+  s.crossOrigin='anonymous';
+  document.head.appendChild(s);
+})();
+</script>
 <style>
 :root{--pu:#6B3FA0;--pu-d:#3D1A6B;--pu-l:#EDE7F6;--mg:#C0006A;--mg-l:#FCE4F0;--red:#B91C1C;--red-bg:#FEE2E2;--amb:#B45309;--amb-bg:#FEF3C7;--grn:#166534;--grn-bg:#DCFCE7;--bd:#E5E7EB;--bg:#F8F7FC;--tx:#111827;--txm:#6B7280;--sh:0 1px 3px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -435,7 +443,19 @@ const SP_CONFIG={
 const msalCfg={auth:{clientId:SP_CONFIG.clientId,authority:'https://login.microsoftonline.com/'+SP_CONFIG.tenantId,redirectUri:'https://protectsplus.github.io/SHSCT_Test__Tool/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}};
 let msalApp=null,spToken=null,currentUser=null;
 const SP_SCOPES=['https://yewdaleltd.sharepoint.com/.default'];
-async function initMSAL(){if(msalApp)return;msalApp=new msal.PublicClientApplication(msalCfg);await msalApp.initialize();await msalApp.handleRedirectPromise();}
+async function initMSAL(){
+  if(msalApp)return;
+  // Wait for MSAL library to load
+  let attempts=0;
+  while(typeof msal==='undefined'&&attempts<20){
+    await new Promise(r=>setTimeout(r,200));
+    attempts++;
+  }
+  if(typeof msal==='undefined')throw new Error('Microsoft sign-in library failed to load. Check your internet connection.');
+  msalApp=new msal.PublicClientApplication(msalCfg);
+  await msalApp.initialize();
+  await msalApp.handleRedirectPromise();
+}
 async function getToken(){
   await initMSAL();
   const accs=msalApp.getAllAccounts();
