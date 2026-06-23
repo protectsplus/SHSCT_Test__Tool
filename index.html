@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.js"></script>
 <style>
 :root{--pu:#6B3FA0;--pu-d:#3D1A6B;--pu-l:#EDE7F6;--mg:#C0006A;--mg-l:#FCE4F0;--red:#B91C1C;--red-bg:#FEE2E2;--amb:#B45309;--amb-bg:#FEF3C7;--grn:#166534;--grn-bg:#DCFCE7;--bd:#E5E7EB;--bg:#F8F7FC;--tx:#111827;--txm:#6B7280;--sh:0 1px 3px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -435,76 +434,10 @@ textarea{resize:vertical;min-height:60px;}
 <div class="toast" id="toast"></div>
 <script>
 
-// ===== SHAREPOINT / MSAL CONFIG =====
-const SP_CONFIG={
-  clientId:'c5445b40-5f0e-4791-af90-89306bee51ed',
-  tenantId:'ff570d20-2908-4bb3-ac6d-4404fdafddcb',
-  siteUrl:'https://yewdaleltd.sharepoint.com/sites/ProtectsPlus',
-  aList:'LigatureAssessments',
-  wList:'LigatureWeeklyChecks',
-};
-const msalCfg={auth:{clientId:SP_CONFIG.clientId,authority:'https://login.microsoftonline.com/'+SP_CONFIG.tenantId,redirectUri:'https://protectsplus.github.io/SHSCT_Test__Tool/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}};
-let msalApp=null,spToken=null,currentUser=null;
-const SP_SCOPES=['https://yewdaleltd.sharepoint.com/.default'];
-async function initMSAL(){
-  if(msalApp)return;
-  let attempts=0;
-  while(typeof window.msal==='undefined'&&typeof window.msalBrowser==='undefined'&&attempts<30){
-    await new Promise(r=>setTimeout(r,300));
-    attempts++;
-  }
-  const msalLib=window.msal||window.msalBrowser;
-  if(!msalLib||!msalLib.PublicClientApplication)throw new Error('Microsoft authentication library failed to load.');
-  msalApp=new msalLib.PublicClientApplication(msalCfg);
-  await msalApp.initialize();
-  await msalApp.handleRedirectPromise();
-}
-async function getToken(){
-  await initMSAL();
-  const accs=msalApp.getAllAccounts();
-  if(!accs.length){const r=await msalApp.loginPopup({scopes:SP_SCOPES});spToken=r.accessToken;currentUser=r.account.name||r.account.username;return spToken;}
-  try{const r=await msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accs[0]});spToken=r.accessToken;currentUser=accs[0].name||accs[0].username;return spToken;}
-  catch(e){const r=await msalApp.loginPopup({scopes:SP_SCOPES});spToken=r.accessToken;currentUser=r.account.name||r.account.username;return spToken;}
-}
-let _dig=null,_digExp=0;
-async function digest(){
-  if(_dig&&Date.now()<_digExp)return _dig;
-  const t=await getToken();
-  const r=await fetch(SP_CONFIG.siteUrl+'/_api/contextinfo',{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata'}});
-  const d=await r.json();_dig=d.FormDigestValue;_digExp=Date.now()+(d.FormDigestTimeoutSeconds-30)*1000;return _dig;
-}
-async function spGET(p){const t=await getToken();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata'}});if(!r.ok)throw new Error('GET '+r.status);return r.json();}
-async function spPOST(p,b){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata','Content-Type':'application/json;odata=nometadata','X-RequestDigest':dg},body:JSON.stringify(b)});if(!r.ok){const tx=await r.text();throw new Error('POST '+r.status+' '+tx);}return r.status===204?{}:r.json();}
-async function spMERGE(p,b){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata','Content-Type':'application/json;odata=nometadata','X-RequestDigest':dg,'IF-MATCH':'*','X-HTTP-Method':'MERGE'},body:JSON.stringify(b)});if(!r.ok&&r.status!==204)throw new Error('MERGE '+r.status);}
-async function spDEL(p){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'X-RequestDigest':dg,'IF-MATCH':'*','X-HTTP-Method':'DELETE'}});if(!r.ok&&r.status!==204)throw new Error('DEL '+r.status);}
-async function ensureCol(L){try{await spGET("web/lists/getbytitle('"+L+"')/fields/getbytitle('AssessmentData')")}catch(e){try{await spPOST("web/lists/getbytitle('"+L+"')/fields",{Title:'AssessmentData',FieldTypeKind:3,StaticName:'AssessmentData'})}catch(e2){}}}
-async function saveToSP(data){
-  setSPStatus('Saving to SharePoint...');
-  const b={Title:String(data.id),AssessmentData:JSON.stringify(data)};
-  if(data.spId){await spMERGE("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+data.spId+")",b);}
-  else{const r=await spPOST("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items",b);data.spId=r.Id;}
-  setSPStatus('Saved to SharePoint \u2713','grn');setTimeout(()=>setSPStatus(''),3000);
-  return data;
-}
-async function loadFromSP(){
-  setSPStatus('Loading from SharePoint...');
-  const r=await spGET("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items?$select=Id,AssessmentData&$top=500&$orderby=Id desc");
-  AS=(r.value||[]).map(i=>{try{const d=JSON.parse(i.AssessmentData||'{}');d.spId=i.Id;return d;}catch(e){return null;}}).filter(Boolean);
-  setSPStatus('');return AS;
-}
-async function saveWeeklyToSP(data){
-  const r=await spPOST("web/lists/getbytitle('"+SP_CONFIG.wList+"')/items",{Title:String(data.id),AssessmentData:JSON.stringify(data)});
-  data.spId=r.Id;return data;
-}
-async function loadWeeklyFromSP(){
-  const r=await spGET("web/lists/getbytitle('"+SP_CONFIG.wList+"')/items?$select=Id,AssessmentData&$top=500&$orderby=Id desc");
-  WK=(r.value||[]).map(i=>{try{const d=JSON.parse(i.AssessmentData||'{}');d.spId=i.Id;return d;}catch(e){return null;}}).filter(Boolean);
-  return WK;
-}
-async function deleteFromSP(spId){await spDEL("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+spId+")");}
+// ===== DEMO MODE - NO SHAREPOINT =====
 function loadAndRenderDash(){seedDemoData();renderDash();}
-function setSPStatus(msg,col){const b=document.getElementById('sp-status');if(!b)return;b.textContent=msg;b.style.color=col==='red'?'#B91C1C':col==='grn'?'#166534':'#6B7280';b.style.display=msg?'block':'none';}
-// ===== END SHAREPOINT CONFIG =====
+function setSPStatus(){}
+// ===== END DEMO MODE =====
 
 const LPR=[
   {r:1,n:'Windows: catches / frames / blinds'},{r:2,n:'Doors: handles, hinges, door closers'},
