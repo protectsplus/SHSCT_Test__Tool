@@ -139,9 +139,13 @@ textarea{resize:vertical;min-height:60px;}
       <div class="fg"><label>Date of assessment</label><input type="date" id="f-date"></div>
     </div>
     <div class="fr">
-      <div class="fg"><label>Name &amp; designation of assessor</label><input type="text" id="f-assessor" placeholder="Full name and job title"></div>
+      <div class="fg"><label>Name &amp; designation of assessor <span style="color:var(--red);">*</span></label><input type="text" id="f-assessor" placeholder="Full name and job title" style="border-color:#6B3FA0;"></div>
       <div class="fg"><label>Reason for assessment</label>
         <select id="f-reason"><option value="">Select reason</option><option>Initial</option><option>Annual review</option><option>Post incident</option><option>Change of location</option><option>Change of process / procedures</option><option>Change of work equipment</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Assessor email address <span style="color:var(--red);">*</span></label><input type="email" id="f-email" placeholder="name@southerntrust.hscni.net" style="border-color:#6B3FA0;"></div>
+      <div class="fg"><label>Submission date &amp; time</label><input type="text" id="f-submitted" readonly style="background:#F8F7FC;color:var(--txm);font-size:12px;"></div>
     </div>
     <div class="fg"><label>Service presentation &mdash; include: specialty &middot; staffing &middot; number of beds / layout &middot; room type (open ward / side room / private) &middot; supervision / observation level</label>
       <textarea id="f-svc" placeholder="e.g. 20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation available."></textarea></div>
@@ -509,6 +513,8 @@ function showView(v){
 
 function initForm(){
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  const now=new Date();
+  document.getElementById('f-submitted').value=now.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' at '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   ragV='';
   document.querySelectorAll('#rag-sel .ro').forEach(r=>r.className='ro');
   document.getElementById('rag-notice').style.display='none';
@@ -628,7 +634,7 @@ function collectForm(){
   return{
     id:Date.now(),date:document.getElementById('f-date').value,
     dir:document.getElementById('f-dir').value,div:document.getElementById('f-div').value,
-    ward:document.getElementById('f-ward').value,assessor:document.getElementById('f-assessor').value,
+    ward:document.getElementById('f-ward').value,assessor:document.getElementById('f-assessor').value,email:document.getElementById('f-email').value,submitted:document.getElementById('f-submitted').value,
     reason:document.getElementById('f-reason').value,svc:document.getElementById('f-svc').value,
     persons:ps,datix:document.querySelector('input[name="datix"]:checked')?.value||'No',
     datixDetail:document.getElementById('f-datix').value,
@@ -698,6 +704,18 @@ function saveA(){
       toast('Please enter a ward / department name.');return;
     }
     if(!d.date){toast('Please enter a date.');return;}
+    if(!d.assessor){
+      document.getElementById('f-assessor').style.border='2px solid #B91C1C';
+      document.getElementById('f-assessor').focus();
+      toast('Please enter the assessor name.');return;
+    }
+    if(!d.email){
+      document.getElementById('f-email').style.border='2px solid #B91C1C';
+      document.getElementById('f-email').focus();
+      toast('Please enter the assessor email address.');return;
+    }
+    document.getElementById('f-assessor').style.border='';
+    document.getElementById('f-email').style.border='';
     if(!d.overallRag){
       document.getElementById('rag-sel').scrollIntoView({behavior:'smooth',block:'center'});
       toast('Please select an overall RAG rating in Section 4.');return;
@@ -874,7 +892,9 @@ function doPDFid(id){
   doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont(undefined,'bold');
   doc.text((a.ward||'Assessment')+' - Ligature Risk Assessment',LM,y);y+=5;
   doc.setFontSize(8);doc.setFont(undefined,'normal');doc.setTextColor(80,80,80);
-  doc.text(`${a.dir||''} - ${a.div||''} - Date: ${a.date} - Assessor: ${a.assessor||'-'} - Approver: ${a.approver||'-'} (${a.appDate||'-'})`,LM,y);y+=5;
+  doc.text(`${a.dir||''} - ${a.div||''} - Date: ${a.date} - Assessor: ${a.assessor||'-'}${a.email?' ('+a.email+')':''} - Approver: ${a.approver||'-'} (${a.appDate||'-'})`,LM,y);y+=4;
+  if(a.submitted){doc.setFontSize(7);doc.text('Submitted: '+a.submitted,LM,y);y+=4;}
+  doc.setFontSize(8);
   doc.setTextColor(20,20,20);
 
   // Section 1 details table
@@ -1007,18 +1027,18 @@ function doPDFid(id){
 // Seed demo data if nothing in storage
 function seedIfEmpty(){if(AS.length)return;
   AS=[
-    {id:1700000001,date:'2026-05-12',dir:'Mental Health & Disability',div:'Bluestone Unit (CAH)',ward:'Bluestone Acute Ward',assessor:"J. O'Hare, Ward Manager",reason:'Annual review',svc:'20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation capacity available.',persons:['Patient','Employee'],datix:'Yes',datixDetail:'1 ligature attempt using belt over door handle. No injury. Learning: anti-ligature handles required.',env:{vision:'Yes - most patient areas',solid:'Yes - en-suites / toilets only',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Yes - on resuscitation trolley, weekly checked',notes:'En-suite thumb locks remain a concern. Doors without vision panels in en-suites need ongoing risk management.'},lps:[
+    {id:1700000001,date:'2026-05-12',dir:'Mental Health & Disability',div:'Bluestone Unit (CAH)',ward:'Bluestone Acute Ward',assessor:"J. O'Hare, Ward Manager",email:'j.ohare@southerntrust.hscni.net',submitted:'Monday, 12 May 2026 at 09:34',reason:'Annual review',svc:'20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation capacity available.',persons:['Patient','Employee'],datix:'Yes',datixDetail:'1 ligature attempt using belt over door handle. No injury. Learning: anti-ligature handles required.',env:{vision:'Yes - most patient areas',solid:'Yes - en-suites / toilets only',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Yes - on resuscitation trolley, weekly checked',notes:'En-suite thumb locks remain a concern. Doors without vision panels in en-suites need ongoing risk management.'},lps:[
       {rag:'red',lpR:2,lpN:'Doors: handles, hinges, door closers',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'En-suite bathroom door handle - solid door, no vision panel. Standard lever type, weight bearing.',ctrl:'Door handle reviewed - standard, not anti-ligature.',l:4,i:5,rr:20,act:'Replace with anti-ligature lever handle. Estates work order raised.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
       {rag:'red',lpR:14,lpN:'Shower hose / control knob / shower cubicle door',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'Shower hose in en-suite - weight bearing when fixed to rail.',ctrl:'Standard hose - not anti-ligature type.',l:4,i:5,rr:20,act:'Replace shower hoses with breakaway anti-ligature type.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
       {rag:'amb',lpR:3,lpN:'Curtain rail systems (incl. suspended rails / shower curtains) / bedrails',room:'Bedrooms',wb:'No',obs:'Vision panel',desc:'Bedroom curtain track - suspended type. Anti-ligature track fitted.',ctrl:'Anti-ligature curtain rail installed. Weekly tested.',l:2,i:5,rr:10,act:'Confirm installation record with Estates. Re-test and document.',ace:'Ward Manager',tgt:'2026-06-15',done:'',pal:null,pai:null,par:null},
       {rag:'grn',lpR:10,lpN:'Sinks: taps, wall-mounted soap / towel dispensers',room:'Communal lounge',wb:'No',obs:'Direct',desc:'Wall mounted soap dispenser - collapsible type.',ctrl:'Collapsible dispensers fitted. Weekly checked.',l:1,i:3,rr:3,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
     ],overallRag:'red',ctype:'2 x LC1 + 1 x Wire cutter (higher risk areas)',cloc:'Bottom compartment of resuscitation trolley, Bluestone ward station',incident:'Yes - no injury',datixRef:'IR1-2026-00441',piActions:['Scene secured / forensic evidence preserved','Doctor informed','Vital signs / physical observations taken','Site Manager / Senior Nurse informed','Family / next of kin informed','Documented in patient notes','Observation level reviewed and recorded in notes','Level of risk assessed and recorded in notes','DATIX completed and reference recorded','Staff hot debrief provided','Ligature cutter replaced immediately'],piNotes:'Ligature used was a belt. Ligature / anchor point was a door handle. Patient transferred to PICU. Debrief held same shift. Cutters replaced immediately.',reviews:[{rdate:'2026-05-20',lpref:'2',action:'Estates work order raised for anti-ligature door handles (all en-suites)',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Work order accepted. Installation scheduled 28/06/2026.'},{rdate:'2026-05-20',lpref:'14',action:'Anti-ligature shower hoses ordered and delivery confirmed',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Delivery expected 15/06/2026. Installation to follow.'}],esc:'Yes',escDate:'2026-05-13',riskReg:'Yes',rRef:'MHD-2026-047',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'Dr A. McAuley, Consultant Psychiatrist',appDate:'2026-05-14',notes:'Training needs form submitted. 2-yearly refresher training for all core staff due Nov 2026.'},
-    {id:1700000002,date:'2026-04-03',dir:"Children's, Young Persons & Women's Services",div:"Cedar Grove Children's Residential Home",ward:'Cedar Grove Residential Home',assessor:'M. Quinn, Head of Service',reason:'Initial',svc:"6-bed children's residential home. Ages 12-17. 24hr staffing. Bedroom doors have vision panels. Communal lounge and dining areas. Individual risk assessments in place for each resident.",persons:['Client','Employee'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - requires updating',access:'Yes - partial controls',alarm:'Yes - personal alarms only',comms:'Yes - mobile phones only',door:'Not applicable',cutters:'Yes - secured central location, weekly checked',notes:'Alarm coverage to be extended to upper residential floors. Floor plan to be updated.'},lps:[
+    {id:1700000002,date:'2026-04-03',dir:"Children's, Young Persons & Women's Services",div:"Cedar Grove Children's Residential Home",ward:'Cedar Grove Residential Home',assessor:'M. Quinn, Head of Service',email:'m.quinn@southerntrust.hscni.net',submitted:'Friday, 3 April 2026 at 14:15',reason:'Initial',svc:"6-bed children's residential home. Ages 12-17. 24hr staffing. Bedroom doors have vision panels. Communal lounge and dining areas. Individual risk assessments in place for each resident.",persons:['Client','Employee'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - requires updating',access:'Yes - partial controls',alarm:'Yes - personal alarms only',comms:'Yes - mobile phones only',door:'Not applicable',cutters:'Yes - secured central location, weekly checked',notes:'Alarm coverage to be extended to upper residential floors. Floor plan to be updated.'},lps:[
       {rag:'amb',lpR:8,lpN:'Coat hooks',room:'Bedrooms',wb:'Yes',obs:'Vision panel',desc:'Fixed metal coat hook rear of bedroom door.',ctrl:'Standard coat hooks - weight bearing, not anti-ligature.',l:3,i:4,rr:12,act:'Replace with anti-ligature coat hooks (breakaway type).',ace:'Estates - CAH',tgt:'2026-06-30',done:'',pal:null,pai:null,par:null},
       {rag:'amb',lpR:17,lpN:'Mobile phone / device charger',room:'Bedrooms',wb:'No',obs:'Intermittent',desc:'Charging cables in bedrooms - variable lengths.',ctrl:'Cable management reviewed. Length checked by staff.',l:2,i:4,rr:8,act:'Move charging to supervised communal area only. Remove bedroom cables.',ace:'M. Quinn',tgt:'2026-04-17',done:'2026-04-17',pal:1,pai:4,par:4},
       {rag:'grn',lpR:5,lpN:'Radiators',room:'All areas',wb:'No',obs:'Direct',desc:'Panel radiators throughout - standard housing with covers.',ctrl:'Radiator covers fitted. No exposed pipework.',l:1,i:2,rr:2,act:'None required. Review at next annual assessment.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
     ],overallRag:'amb',ctype:'3 x LC1 cutters',cloc:'Secure cabinet in staff office, ground floor. Communicated at induction.',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[{rdate:'2026-04-18',lpref:'17',action:'Bedroom charging cables removed. Communal charging station installed in lounge.',actionee:'M. Quinn',desig:'Head of Service',progress:'Completed 17/04/2026. Action closed. Post-action RR: 1x4=4.'}],esc:'Yes',escDate:'2026-04-05',riskReg:'Yes',rRef:'CYPWS-2026-011',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'P. Dolan, Assistant Director',appDate:'2026-04-10',notes:'Alarm extension to upper floors to be costed and included in Estates plan Q3 2026. Floor plan to be updated to reflect communal charging point.'},
-    {id:1700000003,date:'2026-03-18',dir:'Medicine & Unscheduled Care',div:'Craigavon Area Hospital (CAH)',ward:'Emergency Department',assessor:'B. McConville, Clinical Nurse Manager',reason:'Annual review',svc:'High-acuity ED. Resus, majors, minors, triage areas. High staff-to-patient ratio. No unsupervised patient areas. 24hr consultant cover. High staff movement throughout.',persons:['Patient','Employee','Visitor'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'No thumb locks fitted',keys:'Yes - all rooms',cctv:'Yes - full coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Not applicable (GREEN area)',notes:''},lps:[
+    {id:1700000003,date:'2026-03-18',dir:'Medicine & Unscheduled Care',div:'Craigavon Area Hospital (CAH)',ward:'Emergency Department',assessor:'B. McConville, Clinical Nurse Manager',email:'b.mcconville@southerntrust.hscni.net',submitted:'Wednesday, 18 March 2026 at 11:02',reason:'Annual review',svc:'High-acuity ED. Resus, majors, minors, triage areas. High staff-to-patient ratio. No unsupervised patient areas. 24hr consultant cover. High staff movement throughout.',persons:['Patient','Employee','Visitor'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'No thumb locks fitted',keys:'Yes - all rooms',cctv:'Yes - full coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Not applicable (GREEN area)',notes:''},lps:[
       {rag:'grn',lpR:1,lpN:'Windows: catches / frames / blinds',room:'All clinical areas',wb:'No',obs:'Direct',desc:'All windows - window restrictors fitted.',ctrl:'Restrictors in place throughout. Tested annually.',l:1,i:3,rr:3,act:'Confirm restrictor test dates with Estates.',ace:'C. Horisk, Estates',tgt:'2026-09-18',done:'',pal:null,pai:null,par:null},
       {rag:'grn',lpR:16,lpN:'Fire bells / extinguisher brackets',room:'Entrances',wb:'No',obs:'Direct',desc:'Wall-mounted fire extinguisher brackets at clinical entrances. At height.',ctrl:'Brackets at height - not easily accessible from floor level.',l:1,i:2,rr:2,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
     ],overallRag:'grn',ctype:'Not applicable (GREEN area)',cloc:'',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[],esc:'No',escDate:'',riskReg:'No',rRef:'',sentHS:'Yes',tnf:'No',shared:'Yes',cutInd:'No',approver:'C. Harron, Operational Manager',appDate:'2026-03-22',notes:'Low risk area - high staff presence at all times. Review in 12 months or following any incident. Cutters not applicable.'},
