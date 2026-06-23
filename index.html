@@ -735,7 +735,7 @@ function openWM(){
 function closeWM(){document.getElementById('wmod').style.display='none';}
 
 // FIX 2: saveWC — reload from SharePoint after save instead of manually unshifting
-async function saveWC(){
+function saveWC(){
   const w={id:Date.now(),date:document.getElementById('w-date').value,ward:document.getElementById('w-ward').value,by:document.getElementById('w-by').value,risks:document.querySelector('input[name="wr"]:checked')?.value||'No',damage:document.querySelector('input[name="wd"]:checked')?.value||'No',cutters:document.querySelector('input[name="wc"]:checked')?.value||'Yes',clost:document.querySelector('input[name="wl"]:checked')?.value||'No',notes:document.getElementById('w-notes').value};
   if(!w.ward||!w.date){toast('Please select ward and date.');return;}
   WK.unshift(w);
@@ -747,7 +747,7 @@ function renderHist(){
   if(!AS.length){el.innerHTML='<div class="empty"><h3>No assessments yet</h3></div>';return;}
   el.innerHTML=AS.map(a=>`<div class="ar"><div class="ai"><div class="an">${a.ward||'Unnamed'} <span class="tag tag-pu" style="margin-left:4px;">${a.reason||'Assessment'}</span></div><div class="am">${a.dir||''} &middot; ${a.div||''} &middot; ${a.date} &middot; Assessor: ${a.assessor||'-'} &middot; Approver: ${a.approver||'-'}</div><div style="margin-top:2px;font-size:11px;">${(a.lps||[]).length} ligature points &middot; ${(a.lps||[]).filter(l=>l.rag==='red').length} red &middot; ${(a.lps||[]).filter(l=>l.act).length} actions</div></div><span class="rag rag-${a.overallRag}"><span class="rd"></span>${(a.overallRag||'').toUpperCase()}</span><div class="aa"><button class="btn btn-o btn-s" onclick="viewA(${a.id})">View</button><button class="btn btn-o btn-s" onclick="doPDFid(${a.id})">PDF</button><button class="btn btn-s btn-del" onclick="delA(${a.id})">Delete</button></div></div>`).join('');
 }
-async function delA(id){
+function delA(id){
   if(!confirm('Delete this assessment?'))return;
   AS=AS.filter(x=>x.id!==id);
   renderHist();toast('Deleted.');
@@ -912,12 +912,17 @@ function seedDemoData(){
   ];
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
+function initApp(){
+  if(typeof Chart === 'undefined'){
+    setTimeout(initApp, 50);
+    return;
+  }
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
   seedDemoData();
   renderDash();
-});
+}
+document.addEventListener('DOMContentLoaded', initApp);
 function addCustomItem(containerId){
   const div=document.createElement('div');
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
