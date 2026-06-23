@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SHSCT Ligature Risk Assessment Tool</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root{--pu:#6B3FA0;--pu-d:#3D1A6B;--pu-l:#EDE7F6;--mg:#C0006A;--mg-l:#FCE4F0;--red:#B91C1C;--red-bg:#FEE2E2;--amb:#B45309;--amb-bg:#FEF3C7;--grn:#166534;--grn-bg:#DCFCE7;--bd:#E5E7EB;--bg:#F8F7FC;--tx:#111827;--txm:#6B7280;--sh:0 1px 3px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -432,6 +429,9 @@ textarea{resize:vertical;min-height:60px;}
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 
 // ===== DEMO MODE - NO SHAREPOINT =====
@@ -912,17 +912,12 @@ function seedDemoData(){
   ];
 }
 
-function initApp(){
-  if(typeof Chart === 'undefined'){
-    setTimeout(initApp, 50);
-    return;
-  }
+document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
   seedDemoData();
   renderDash();
-}
-document.addEventListener('DOMContentLoaded', initApp);
+});
 function addCustomItem(containerId){
   const div=document.createElement('div');
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
