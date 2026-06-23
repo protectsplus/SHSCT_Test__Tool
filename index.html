@@ -188,6 +188,11 @@ textarea{resize:vertical;min-height:60px;}
         <div class="fg"><label>Door management: anti-barricade solutions / vision panels in place?</label><select id="e-door"><option value="">Select</option><option>Yes</option><option>Partial</option><option>No</option><option>Not applicable</option></select></div>
         <div class="fg"><label>Ligature rescue cutters available and subject to weekly check?</label><select id="e-cutters"><option value="">Select</option><option>Yes &mdash; on resuscitation trolley, weekly checked</option><option>Yes &mdash; secured central location, weekly checked</option><option>Yes but weekly check not yet confirmed</option><option>No &mdash; to be arranged</option></select></div>
         <div class="fg"><label>Environmental checklist notes / gaps identified</label><textarea id="e-notes" placeholder="Note any gaps, deficiencies or remedial actions required from the above items..."></textarea></div>
+        <div class="fg">
+          <label>Additional checklist items (add your own prompts or questions)</label>
+          <div id="custom-env-items"></div>
+          <button class="btn btn-o btn-s" style="margin-top:6px;" onclick="addCustomItem('custom-env-items')">+ Add custom item</button>
+        </div>
       </div>
     </div>
   </div>
@@ -198,7 +203,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="ch">
       <div><div class="ct">Section 3 &mdash; Ligature point assessment (room by room)</div>
       <div class="cs">Procedure Section 5: work up-down / left-right from a defined point in each room. Classify / colour-code each room. L = Likelihood (1&ndash;5) &middot; I = Impact (1&ndash;5) &middot; RR = L &times; I. If weight-bearing status unsure, assume yes.</div></div>
-      <button class="btn btn-o btn-s" onclick="addLPRow()">+ Add row</button>
+
     </div>
     <div class="ibox"><p>&#9432; <strong>Complete suspension is not required for a ligature to be fatal.</strong> Partial suspension (semi-seated, kneeling, lying) carries the same risk. Assess all potential anchor points regardless of height. Some points (e.g. grab rails) may need to remain &mdash; formally assess and record the justification.</p></div>
     <div style="overflow-x:auto;">
@@ -278,7 +283,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="ch">
       <div><div class="ct">Section 6 &mdash; Ward manager / facility manager follow-up &amp; review</div>
       <div class="cs">Record progress on actions. This section corresponds to Page 4 of the official RA form.</div></div>
-      <button class="btn btn-o btn-s" onclick="addReviewRow()">+ Add review row</button>
+
     </div>
     <div style="overflow-x:auto;">
     <table class="review-tbl" id="rev-tbl"><thead><tr>
@@ -323,6 +328,12 @@ textarea{resize:vertical;min-height:60px;}
     <div class="fr">
       <div class="fg"><label>Ward manager / approver name &amp; designation</label><input type="text" id="f-approver" placeholder="Full name and job title"></div>
       <div class="fg"><label>Date approved</label><input type="date" id="f-appdate"></div>
+    </div>
+    <div class="fg">
+      <label>Custom prompts / additional questions for this assessment</label>
+      <p style="font-size:11px;color:var(--txm);margin-bottom:6px;">Add any ward-specific or Trust-specific prompts you want to capture that aren't covered in the sections above.</p>
+      <div id="custom-general-items"></div>
+      <button class="btn btn-o btn-s" style="margin-top:6px;" onclick="addCustomItem('custom-general-items')">+ Add custom prompt</button>
     </div>
     <div class="fg"><label>Additional notes</label><textarea id="f-notes" placeholder="Any further observations, actions or comments not captured above..."></textarea></div>
   </div>
@@ -591,6 +602,8 @@ function initForm(){
   document.getElementById('f-approver').value='';
   document.getElementById('f-appdate').value='';
   document.getElementById('f-notes').value='';
+  document.getElementById('custom-env-items').innerHTML='';
+  document.getElementById('custom-general-items').innerHTML='';
   popDirs();addLPRow();addLPRow();addReviewRow();
 }
 
@@ -723,6 +736,8 @@ function collectForm(){
     cutInd:document.querySelector('input[name="cutind"]:checked')?.value||'No',
     approver:document.getElementById('f-approver').value,appDate:document.getElementById('f-appdate').value,
     notes:document.getElementById('f-notes').value,
+    customEnv:collectCustomItems('custom-env-items'),
+    customGeneral:collectCustomItems('custom-general-items'),
   };
 }
 
@@ -956,6 +971,27 @@ function doPDFid(id){
   toast('PDF exported successfully.');
 }
 
+function seedDemoData(){
+  if(AS.length)return;
+  AS=[
+    {id:1700000001,date:'2026-05-12',dir:'Mental Health & Disability',div:'Bluestone Unit (CAH)',ward:'Bluestone Acute Ward',assessor:"J. O'Hare, Ward Manager",reason:'Annual review',svc:'20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation capacity available.',persons:['Patient','Employee'],datix:'Yes',datixDetail:'1 ligature attempt using belt over door handle. No injury. Learning: anti-ligature handles required.',env:{vision:'Yes - most patient areas',solid:'Yes - en-suites / toilets only',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Yes - on resuscitation trolley, weekly checked',notes:'En-suite thumb locks remain a concern. Doors without vision panels in en-suites need ongoing risk management.'},lps:[
+      {rag:'red',lpR:2,lpN:'Doors: handles, hinges, door closers',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'En-suite bathroom door handle - solid door, no vision panel. Standard lever type, weight bearing.',ctrl:'Door handle reviewed - standard, not anti-ligature.',l:4,i:5,rr:20,act:'Replace with anti-ligature lever handle. Estates work order raised.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'red',lpR:14,lpN:'Shower hose / control knob / shower cubicle door',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'Shower hose in en-suite - weight bearing when fixed to rail.',ctrl:'Standard hose - not anti-ligature type.',l:4,i:5,rr:20,act:'Replace shower hoses with breakaway anti-ligature type.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'amb',lpR:3,lpN:'Curtain rail systems (incl. suspended rails / shower curtains) / bedrails',room:'Bedrooms',wb:'No',obs:'Vision panel',desc:'Bedroom curtain track - suspended type. Anti-ligature track fitted.',ctrl:'Anti-ligature curtain rail installed. Weekly tested.',l:2,i:5,rr:10,act:'Confirm installation record with Estates. Re-test and document.',ace:'Ward Manager',tgt:'2026-06-15',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:10,lpN:'Sinks: taps, wall-mounted soap / towel dispensers',room:'Communal lounge',wb:'No',obs:'Direct',desc:'Wall mounted soap dispenser - collapsible type.',ctrl:'Collapsible dispensers fitted. Weekly checked.',l:1,i:3,rr:3,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'red',ctype:'2 x LC1 + 1 x Wire cutter (higher risk areas)',cloc:'Bottom compartment of resuscitation trolley, Bluestone ward station',incident:'Yes - no injury',datixRef:'IR1-2026-00441',piActions:['Scene secured / forensic evidence preserved','Doctor informed','Vital signs / physical observations taken','Site Manager / Senior Nurse informed','Family / next of kin informed','Documented in patient notes','Observation level reviewed and recorded in notes','Level of risk assessed and recorded in notes','DATIX completed and reference recorded','Staff hot debrief provided','Ligature cutter replaced immediately'],piNotes:'Ligature used was a belt. Ligature / anchor point was a door handle. Patient transferred to PICU. Debrief held same shift. Cutters replaced immediately.',reviews:[{rdate:'2026-05-20',lpref:'2',action:'Estates work order raised for anti-ligature door handles (all en-suites)',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Work order accepted. Installation scheduled 28/06/2026.'},{rdate:'2026-05-20',lpref:'14',action:'Anti-ligature shower hoses ordered and delivery confirmed',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Delivery expected 15/06/2026. Installation to follow.'}],esc:'Yes',escDate:'2026-05-13',riskReg:'Yes',rRef:'MHD-2026-047',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'Dr A. McAuley, Consultant Psychiatrist',appDate:'2026-05-14',notes:'Training needs form submitted. 2-yearly refresher training for all core staff due Nov 2026.'},
+    {id:1700000002,date:'2026-04-03',dir:"Children's, Young Persons & Women's Services",div:"Cedar Grove Children's Residential Home",ward:'Cedar Grove Residential Home',assessor:'M. Quinn, Head of Service',reason:'Initial',svc:"6-bed children's residential home. Ages 12-17. 24hr staffing. Bedroom doors have vision panels. Communal lounge and dining areas. Individual risk assessments in place for each resident.",persons:['Client','Employee'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - requires updating',access:'Yes - partial controls',alarm:'Yes - personal alarms only',comms:'Yes - mobile phones only',door:'Not applicable',cutters:'Yes - secured central location, weekly checked',notes:'Alarm coverage to be extended to upper residential floors. Floor plan to be updated.'},lps:[
+      {rag:'amb',lpR:8,lpN:'Coat hooks',room:'Bedrooms',wb:'Yes',obs:'Vision panel',desc:'Fixed metal coat hook rear of bedroom door.',ctrl:'Standard coat hooks - weight bearing, not anti-ligature.',l:3,i:4,rr:12,act:'Replace with anti-ligature coat hooks (breakaway type).',ace:'Estates - CAH',tgt:'2026-06-30',done:'',pal:null,pai:null,par:null},
+      {rag:'amb',lpR:17,lpN:'Mobile phone / device charger',room:'Bedrooms',wb:'No',obs:'Intermittent',desc:'Charging cables in bedrooms - variable lengths.',ctrl:'Cable management reviewed. Length checked by staff.',l:2,i:4,rr:8,act:'Move charging to supervised communal area only. Remove bedroom cables.',ace:'M. Quinn',tgt:'2026-04-17',done:'2026-04-17',pal:1,pai:4,par:4},
+      {rag:'grn',lpR:5,lpN:'Radiators',room:'All areas',wb:'No',obs:'Direct',desc:'Panel radiators throughout - standard housing with covers.',ctrl:'Radiator covers fitted. No exposed pipework.',l:1,i:2,rr:2,act:'None required. Review at next annual assessment.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'amb',ctype:'3 x LC1 cutters',cloc:'Secure cabinet in staff office, ground floor. Communicated at induction.',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[{rdate:'2026-04-18',lpref:'17',action:'Bedroom charging cables removed. Communal charging station installed in lounge.',actionee:'M. Quinn',desig:'Head of Service',progress:'Completed 17/04/2026. Action closed. Post-action RR: 1x4=4.'}],esc:'Yes',escDate:'2026-04-05',riskReg:'Yes',rRef:'CYPWS-2026-011',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'P. Dolan, Assistant Director',appDate:'2026-04-10',notes:'Alarm extension to upper floors to be costed and included in Estates plan Q3 2026. Floor plan to be updated to reflect communal charging point.'},
+    {id:1700000003,date:'2026-03-18',dir:'Medicine & Unscheduled Care',div:'Craigavon Area Hospital (CAH)',ward:'Emergency Department',assessor:'B. McConville, Clinical Nurse Manager',reason:'Annual review',svc:'High-acuity ED. Resus, majors, minors, triage areas. High staff-to-patient ratio. No unsupervised patient areas. 24hr consultant cover. High staff movement throughout.',persons:['Patient','Employee','Visitor'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'No thumb locks fitted',keys:'Yes - all rooms',cctv:'Yes - full coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Not applicable (GREEN area)',notes:''},lps:[
+      {rag:'grn',lpR:1,lpN:'Windows: catches / frames / blinds',room:'All clinical areas',wb:'No',obs:'Direct',desc:'All windows - window restrictors fitted.',ctrl:'Restrictors in place throughout. Tested annually.',l:1,i:3,rr:3,act:'Confirm restrictor test dates with Estates.',ace:'C. Horisk, Estates',tgt:'2026-09-18',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:16,lpN:'Fire bells / extinguisher brackets',room:'Entrances',wb:'No',obs:'Direct',desc:'Wall-mounted fire extinguisher brackets at clinical entrances. At height.',ctrl:'Brackets at height - not easily accessible from floor level.',l:1,i:2,rr:2,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'grn',ctype:'Not applicable (GREEN area)',cloc:'',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[],esc:'No',escDate:'',riskReg:'No',rRef:'',sentHS:'Yes',tnf:'No',shared:'Yes',cutInd:'No',approver:'C. Harron, Operational Manager',appDate:'2026-03-22',notes:'Low risk area - high staff presence at all times. Review in 12 months or following any incident. Cutters not applicable.'},
+  ];
+}
+
 document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
@@ -967,9 +1003,47 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     await loadAndRenderDash();
   }catch(e){
     setSPStatus('Sign-in required \u2014 '+e.message,'red');
-    renderDash();
+    seedDemoData();renderDash();
   }
 });
+function addCustomItem(containerId){
+  const div=document.createElement('div');
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
+  div.innerHTML=`
+    <textarea placeholder="Enter your question or prompt..." style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;min-height:40px;resize:vertical;"></textarea>
+    <input type="text" placeholder="Response / answer" style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;">
+    <button onclick="this.closest('div').remove()" class="btn btn-s btn-del" style="margin-top:2px;">x</button>
+  `;
+  document.getElementById(containerId).appendChild(div);
+}
+
+function collectCustomItems(containerId){
+  const items=[];
+  const container=document.getElementById(containerId);
+  if(!container)return items;
+  container.querySelectorAll('div').forEach(row=>{
+    const q=row.querySelector('textarea')?.value?.trim();
+    const a=row.querySelector('input')?.value?.trim();
+    if(q)items.push({q,a:a||''});
+  });
+  return items;
+}
+
+function renderCustomItems(containerId,items){
+  const container=document.getElementById(containerId);
+  if(!container||!items?.length)return;
+  items.forEach(item=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
+    div.innerHTML=`
+      <textarea placeholder="Enter your question or prompt..." style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;min-height:40px;resize:vertical;">${item.q||''}</textarea>
+      <input type="text" placeholder="Response / answer" value="${item.a||''}" style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;">
+      <button onclick="this.closest('div').remove()" class="btn btn-s btn-del" style="margin-top:2px;">x</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
 </script>
 </body>
 </html>
