@@ -912,12 +912,11 @@ function seedDemoData(){
   ];
 }
 
-document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  popDirs();
-  seedDemoData();
-  renderDash();
-});
+// Run directly - scripts are at bottom so DOM and libraries are both ready
+document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+popDirs();
+seedDemoData();
+renderDash();
 function addCustomItem(containerId){
   const div=document.createElement('div');
   div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
