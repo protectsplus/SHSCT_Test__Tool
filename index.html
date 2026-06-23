@@ -502,7 +502,7 @@ async function loadWeeklyFromSP(){
   return WK;
 }
 async function deleteFromSP(spId){await spDEL("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+spId+")");}
-async function loadAndRenderDash(){try{await loadFromSP();await loadWeeklyFromSP();}catch(e){console.warn('SP load failed:',e);}seedDemoData();renderDash();}
+function loadAndRenderDash(){seedDemoData();renderDash();}
 function setSPStatus(msg,col){const b=document.getElementById('sp-status');if(!b)return;b.textContent=msg;b.style.color=col==='red'?'#B91C1C':col==='grn'?'#166534':'#6B7280';b.style.display=msg?'block':'none';}
 // ===== END SHAREPOINT CONFIG =====
 
@@ -555,10 +555,10 @@ function showView(v){
   document.getElementById('view-'+v).style.display='';
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('on');
   if(v==='dashboard')loadAndRenderDash();
-  if(v==='history'){loadFromSP().then(()=>renderHist()).catch(()=>renderHist());}
-  if(v==='trends'){loadFromSP().then(()=>renderTrends()).catch(()=>renderTrends());}
+  if(v==='history'){renderHist();}
+  if(v==='trends'){renderTrends();}
   if(v==='settings')renderSettings();
-  if(v==='weekly'){loadAndRenderWeekly();}
+  if(v==='weekly'){renderWeekly();}
   if(v==='new')initForm();
 }
 
