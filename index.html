@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.js"></script>
+
 <style>
 :root{--pu:#6B3FA0;--pu-d:#3D1A6B;--pu-l:#EDE7F6;--mg:#C0006A;--mg-l:#FCE4F0;--red:#B91C1C;--red-bg:#FEE2E2;--amb:#B45309;--amb-bg:#FEF3C7;--grn:#166534;--grn-bg:#DCFCE7;--bd:#E5E7EB;--bg:#F8F7FC;--tx:#111827;--txm:#6B7280;--sh:0 1px 3px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -94,6 +94,7 @@ textarea{resize:vertical;min-height:60px;}
     <button class="btn btn-g btn-s" onclick="showView('settings')">&#9881; Settings</button>
   </div>
 </div></div>
+<div style="background:#FEF3C7;border-bottom:1px solid #FCD34D;padding:7px 22px;font-size:12px;text-align:center;color:#92400E;">&#9888; <strong>Demo mode</strong> &mdash; This is a test environment. Data is stored locally in your browser only. Do not enter real patient or staff information.</div>
 <div id="sp-status" style="display:none;background:#F8F7FC;border-bottom:1px solid #E5E7EB;padding:6px 22px;font-size:12px;text-align:center;"></div>
 
 <div class="nav"><div class="nav-in">
@@ -385,8 +386,8 @@ textarea{resize:vertical;min-height:60px;}
       <button class="btn btn-p btn-s" style="margin-bottom:1px;" onclick="addEst()">Add</button>
     </div></div>
   <div class="card" style="margin-top:13px;"><div class="ct" style="margin-bottom:7px;">Data management</div>
-    <p style="font-size:12px;color:var(--txm);margin-bottom:11px;">All data is stored in SharePoint. Export a JSON backup below, or clear local cache.</p>
-    <div style="display:flex;gap:7px;"><button class="btn btn-o btn-s" onclick="expJSON()">Export data backup (JSON)</button><button class="btn btn-del btn-s" onclick="clrAll()">Clear local cache</button></div></div>
+    <p style="font-size:12px;color:var(--txm);margin-bottom:11px;">All data is stored in your browser's local storage. Export a JSON backup regularly, or clear all data below.</p>
+    <div style="display:flex;gap:7px;"><button class="btn btn-o btn-s" onclick="expJSON()">Export data backup (JSON)</button><button class="btn btn-del btn-s" onclick="clrAll()">Clear all data</button></div></div>
 </div>
 
 </div><!-- /main -->
@@ -424,76 +425,19 @@ textarea{resize:vertical;min-height:60px;}
 <div class="toast" id="toast"></div>
 <script>
 
-// ===== SHAREPOINT / MSAL CONFIG =====
-const SP_CONFIG={
-  clientId:'c5445b40-5f0e-4791-af90-89306bee51ed',
-  tenantId:'ff570d20-2908-4bb3-ac6d-4404fdafddcb',
-  siteUrl:'https://yewdaleltd.sharepoint.com/sites/ProtectsPlus',
-  aList:'LigatureAssessments',
-  wList:'LigatureWeeklyChecks',
-};
-const msalCfg={auth:{clientId:SP_CONFIG.clientId,authority:'https://login.microsoftonline.com/'+SP_CONFIG.tenantId,redirectUri:'https://protectsplus.github.io/SHSCT_Test__Tool/'},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}};
-let msalApp=null,spToken=null,currentUser=null;
-const SP_SCOPES=['https://yewdaleltd.sharepoint.com/.default'];
-async function initMSAL(){
-  if(msalApp)return;
-  let attempts=0;
-  while(typeof window.msal==='undefined'&&typeof window.msalBrowser==='undefined'&&attempts<30){
-    await new Promise(r=>setTimeout(r,300));
-    attempts++;
-  }
-  const msalLib=window.msal||window.msalBrowser;
-  if(!msalLib||!msalLib.PublicClientApplication)throw new Error('Microsoft authentication library failed to load.');
-  msalApp=new msalLib.PublicClientApplication(msalCfg);
-  await msalApp.initialize();
-  await msalApp.handleRedirectPromise();
+// ===== DEMO MODE - no authentication required =====
+async function saveToSP(data){return data;}
+async function loadFromSP(){return AS;}
+async function saveWeeklyToSP(data){return data;}
+async function loadWeeklyFromSP(){return WK;}
+async function deleteFromSP(spId){}
+async function loadAndRenderDash(){seedIfEmpty();renderDash();}
+function setSPStatus(msg,col){
+  const b=document.getElementById('sp-status');if(!b)return;
+  b.textContent=msg;b.style.color=col==='red'?'#B91C1C':col==='grn'?'#166534':'#6B7280';
+  b.style.display=msg?'block':'none';
 }
-async function getToken(){
-  await initMSAL();
-  const accs=msalApp.getAllAccounts();
-  if(!accs.length){const r=await msalApp.loginPopup({scopes:SP_SCOPES});spToken=r.accessToken;currentUser=r.account.name||r.account.username;return spToken;}
-  try{const r=await msalApp.acquireTokenSilent({scopes:SP_SCOPES,account:accs[0]});spToken=r.accessToken;currentUser=accs[0].name||accs[0].username;return spToken;}
-  catch(e){const r=await msalApp.loginPopup({scopes:SP_SCOPES});spToken=r.accessToken;currentUser=r.account.name||r.account.username;return spToken;}
-}
-let _dig=null,_digExp=0;
-async function digest(){
-  if(_dig&&Date.now()<_digExp)return _dig;
-  const t=await getToken();
-  const r=await fetch(SP_CONFIG.siteUrl+'/_api/contextinfo',{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata'}});
-  const d=await r.json();_dig=d.FormDigestValue;_digExp=Date.now()+(d.FormDigestTimeoutSeconds-30)*1000;return _dig;
-}
-async function spGET(p){const t=await getToken();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata'}});if(!r.ok)throw new Error('GET '+r.status);return r.json();}
-async function spPOST(p,b){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata','Content-Type':'application/json;odata=nometadata','X-RequestDigest':dg},body:JSON.stringify(b)});if(!r.ok){const tx=await r.text();throw new Error('POST '+r.status+' '+tx);}return r.status===204?{}:r.json();}
-async function spMERGE(p,b){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'Accept':'application/json;odata=nometadata','Content-Type':'application/json;odata=nometadata','X-RequestDigest':dg,'IF-MATCH':'*','X-HTTP-Method':'MERGE'},body:JSON.stringify(b)});if(!r.ok&&r.status!==204)throw new Error('MERGE '+r.status);}
-async function spDEL(p){const t=await getToken(),dg=await digest();const r=await fetch(SP_CONFIG.siteUrl+'/_api/'+p,{method:'POST',headers:{'Authorization':'Bearer '+t,'X-RequestDigest':dg,'IF-MATCH':'*','X-HTTP-Method':'DELETE'}});if(!r.ok&&r.status!==204)throw new Error('DEL '+r.status);}
-async function ensureCol(L){try{await spGET("web/lists/getbytitle('"+L+"')/fields/getbytitle('AssessmentData')")}catch(e){try{await spPOST("web/lists/getbytitle('"+L+"')/fields",{Title:'AssessmentData',FieldTypeKind:3,StaticName:'AssessmentData'})}catch(e2){}}}
-async function saveToSP(data){
-  setSPStatus('Saving to SharePoint...');
-  const b={Title:String(data.id),AssessmentData:JSON.stringify(data)};
-  if(data.spId){await spMERGE("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+data.spId+")",b);}
-  else{const r=await spPOST("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items",b);data.spId=r.Id;}
-  setSPStatus('Saved to SharePoint \u2713','grn');setTimeout(()=>setSPStatus(''),3000);
-  return data;
-}
-async function loadFromSP(){
-  setSPStatus('Loading from SharePoint...');
-  const r=await spGET("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items?$select=Id,AssessmentData&$top=500&$orderby=Id desc");
-  AS=(r.value||[]).map(i=>{try{const d=JSON.parse(i.AssessmentData||'{}');d.spId=i.Id;return d;}catch(e){return null;}}).filter(Boolean);
-  setSPStatus('');return AS;
-}
-async function saveWeeklyToSP(data){
-  const r=await spPOST("web/lists/getbytitle('"+SP_CONFIG.wList+"')/items",{Title:String(data.id),AssessmentData:JSON.stringify(data)});
-  data.spId=r.Id;return data;
-}
-async function loadWeeklyFromSP(){
-  const r=await spGET("web/lists/getbytitle('"+SP_CONFIG.wList+"')/items?$select=Id,AssessmentData&$top=500&$orderby=Id desc");
-  WK=(r.value||[]).map(i=>{try{const d=JSON.parse(i.AssessmentData||'{}');d.spId=i.Id;return d;}catch(e){return null;}}).filter(Boolean);
-  return WK;
-}
-async function deleteFromSP(spId){await spDEL("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+spId+")");}
-async function loadAndRenderDash(){try{await loadFromSP();await loadWeeklyFromSP();}catch(e){console.warn('SP load failed:',e);}renderDash();}
-function setSPStatus(msg,col){const b=document.getElementById('sp-status');if(!b)return;b.textContent=msg;b.style.color=col==='red'?'#B91C1C':col==='grn'?'#166534':'#6B7280';b.style.display=msg?'block':'none';}
-// ===== END SHAREPOINT CONFIG =====
+// ===== END DEMO MODE =====
 
 const LPR=[
   {r:1,n:'Windows: catches / frames / blinds'},{r:2,n:'Doors: handles, hinges, door closers'},
@@ -509,6 +453,7 @@ const LPR=[
 ];
 
 function def(k,v){if(!localStorage.getItem(k))localStorage.setItem(k,JSON.stringify(v));}
+def('sa','[]');def('sw','[]');
 def('sd',JSON.stringify(['Medicine & Unscheduled Care','Surgery & Clinical Services',"Children's, Young Persons & Women's Services",'Mental Health & Disability','Adult Community Services']));
 def('sdv',JSON.stringify([
   {n:'Craigavon Area Hospital (CAH)',d:''},{n:'Daisy Hill Hospital (DHH)',d:''},{n:'South Tyrone Hospital (STH)',d:''},{n:'Lurgan Hospital',d:''},
@@ -532,7 +477,7 @@ def('se',JSON.stringify([
 ]));
 function ld(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-let AS=[],WK=[],ragV='',viewId=null,CH={};
+let AS=ld('sa'),WK=ld('sw'),ragV='',viewId=null,CH={};
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -543,54 +488,21 @@ function showView(v){
   });
   document.getElementById('view-'+v).style.display='';
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('on');
-  if(v==='dashboard')loadAndRenderDash();
-  if(v==='history'){loadFromSP().then(()=>renderHist()).catch(()=>renderHist());}
-  if(v==='trends'){loadFromSP().then(()=>renderTrends()).catch(()=>renderTrends());}
+  if(v==='dashboard')renderDash();
+  if(v==='history')renderHist();
+  if(v==='trends')renderTrends();
   if(v==='settings')renderSettings();
-  if(v==='weekly'){loadAndRenderWeekly();}
+  if(v==='weekly')renderWeekly();
   if(v==='new')initForm();
 }
 
 function initForm(){
-  // Reset Section 1
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('f-ward').value='';
-  document.getElementById('f-assessor').value='';
-  document.getElementById('f-reason').value='';
-  document.getElementById('f-svc').value='';
-  document.getElementById('f-datix').value='';
-  document.querySelectorAll('input[name="datix"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('#f-persons input[type="checkbox"]').forEach(c=>{c.checked=false;});
-  // Reset Section 2
-  ['e-vision','e-solid','e-thumb','e-keys','e-cctv','e-floorplan','e-access','e-alarm','e-comms','e-door','e-cutters'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('e-notes').value='';
-  // Reset Section 3
-  document.getElementById('lpb').innerHTML='';
-  // Reset Section 4
   ragV='';
   document.querySelectorAll('#rag-sel .ro').forEach(r=>r.className='ro');
   document.getElementById('rag-notice').style.display='none';
-  // Reset Section 5
-  document.getElementById('f-ctype').value='';
-  document.getElementById('f-cloc').value='';
-  document.getElementById('f-incident').value='';
-  document.getElementById('f-datix-ref').value='';
-  document.getElementById('f-pi-notes').value='';
-  document.querySelectorAll('#f-pi input[type="checkbox"]').forEach(c=>{c.checked=false;});
-  // Reset Section 6
+  document.getElementById('lpb').innerHTML='';
   document.getElementById('rev-body').innerHTML='';
-  // Reset Section 7
-  document.querySelectorAll('input[name="esc"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('input[name="rr"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('input[name="sent"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('input[name="tnf"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('input[name="shared"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.querySelectorAll('input[name="cutind"]').forEach(r=>{r.checked=(r.value==='No');});
-  document.getElementById('f-escdate').value='';
-  document.getElementById('f-rref').value='';
-  document.getElementById('f-approver').value='';
-  document.getElementById('f-appdate').value='';
-  document.getElementById('f-notes').value='';
   popDirs();addLPRow();addLPRow();addReviewRow();
 }
 
@@ -726,21 +638,21 @@ function collectForm(){
   };
 }
 
-// FIX 1: saveA — reload from SharePoint after save instead of manually unshifting
-async function saveA(){
+function saveA(){
   const d=collectForm();
   if(!d.ward||!d.date){toast('Please enter ward name and date.');return;}
   if(!d.overallRag){toast('Please select an overall RAG rating (Section 4).');return;}
-  try{
-    await saveToSP(d);
-    await loadFromSP();
-    toast('Assessment saved to SharePoint.');
-    showView('dashboard');
-  }catch(e){
-    toast('Save failed: '+e.message);
-  }
+  AS.unshift(d);
+  try{sv('sa',AS);}catch(e){}
+  toast('Assessment saved.');
+  showView('dashboard');
 }
 
+async function loadAndRenderDash(){
+  await loadFromSP();
+  await loadWeeklyFromSP();
+  renderDash();
+}
 function renderDash(){
   const total=AS.length,red=AS.filter(a=>a.overallRag==='red').length,amb=AS.filter(a=>a.overallRag==='amb').length,grn=AS.filter(a=>a.overallRag==='grn').length;
   let od=0;AS.forEach(a=>(a.lps||[]).forEach(lp=>{if(lp.act&&lp.tgt&&!lp.done&&new Date(lp.tgt)<new Date())od++;}));
@@ -758,7 +670,7 @@ function renderDash(){
 }
 
 async function loadAndRenderWeekly(){
-  try{await loadWeeklyFromSP();}catch(e){console.warn('SP weekly load failed:',e);}
+  await loadWeeklyFromSP();
   renderWeekly();
 }
 function renderWeekly(){
@@ -773,28 +685,27 @@ function openWM(){
   document.getElementById('wmod').style.display='flex';
 }
 function closeWM(){document.getElementById('wmod').style.display='none';}
-
-// FIX 2: saveWC — reload from SharePoint after save instead of manually unshifting
-async function saveWC(){
+function saveWC(){
   const w={id:Date.now(),date:document.getElementById('w-date').value,ward:document.getElementById('w-ward').value,by:document.getElementById('w-by').value,risks:document.querySelector('input[name="wr"]:checked')?.value||'No',damage:document.querySelector('input[name="wd"]:checked')?.value||'No',cutters:document.querySelector('input[name="wc"]:checked')?.value||'Yes',clost:document.querySelector('input[name="wl"]:checked')?.value||'No',notes:document.getElementById('w-notes').value};
   if(!w.ward||!w.date){toast('Please select ward and date.');return;}
-  try{
-    await saveWeeklyToSP(w);
-    await loadWeeklyFromSP();
-    closeWM();renderWeekly();toast('Weekly check saved to SharePoint.');
-  }catch(e){toast('Save failed: '+e.message);}
+  WK.unshift(w);
+  try{sv('sw',WK);}catch(e){}
+  closeWM();renderWeekly();toast('Weekly check saved.');
 }
 
+async function loadAndRenderHist(){
+  await loadFromSP();
+  renderHist();
+}
 function renderHist(){
   const el=document.getElementById('hist-list');
   if(!AS.length){el.innerHTML='<div class="empty"><h3>No assessments yet</h3></div>';return;}
   el.innerHTML=AS.map(a=>`<div class="ar"><div class="ai"><div class="an">${a.ward||'Unnamed'} <span class="tag tag-pu" style="margin-left:4px;">${a.reason||'Assessment'}</span></div><div class="am">${a.dir||''} &middot; ${a.div||''} &middot; ${a.date} &middot; Assessor: ${a.assessor||'-'} &middot; Approver: ${a.approver||'-'}</div><div style="margin-top:2px;font-size:11px;">${(a.lps||[]).length} ligature points &middot; ${(a.lps||[]).filter(l=>l.rag==='red').length} red &middot; ${(a.lps||[]).filter(l=>l.act).length} actions</div></div><span class="rag rag-${a.overallRag}"><span class="rd"></span>${(a.overallRag||'').toUpperCase()}</span><div class="aa"><button class="btn btn-o btn-s" onclick="viewA(${a.id})">View</button><button class="btn btn-o btn-s" onclick="doPDFid(${a.id})">PDF</button><button class="btn btn-s btn-del" onclick="delA(${a.id})">Delete</button></div></div>`).join('');
 }
-async function delA(id){
+function delA(id){
   if(!confirm('Delete this assessment?'))return;
-  const a=AS.find(x=>x.id===id);
-  if(a&&a.spId){try{await deleteFromSP(a.spId);}catch(e){toast('Delete from SharePoint failed: '+e.message);return;}}
   AS=AS.filter(x=>x.id!==id);
+  try{sv('sa',AS);}catch(e){}
   renderHist();toast('Deleted.');
 }
 
@@ -841,7 +752,7 @@ function rmDiv(i){const d=ld('sdv');d.splice(i,1);sv('sdv',d);renderSettings();}
 function addEst(){const n=document.getElementById('se-n').value.trim();if(!n)return;const e=ld('se');e.push({n,l:document.getElementById('se-l').value,b:document.getElementById('se-b').value,p:document.getElementById('se-p').value});sv('se',e);['se-n','se-l','se-b','se-p'].forEach(id=>document.getElementById(id).value='');renderSettings();toast('Estates officer added.');}
 function rmEst(i){const e=ld('se');e.splice(i,1);sv('se',e);renderSettings();}
 function expJSON(){const b=new Blob([JSON.stringify({assessments:AS,weekly:WK},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SHSCT_ligature_data_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Data exported.');}
-function clrAll(){if(!confirm('Clear local cache? SharePoint data is unaffected.'))return;toast('Local cache cleared.');}
+function clrAll(){if(!confirm('Clear ALL data? Cannot be undone.'))return;AS=[];WK=[];sv('sa',[]);sv('sw',[]);toast('All data cleared.');renderSettings();}
 
 function viewA(id){
   const a=AS.find(x=>x.id===id);if(!a)return;viewId=id;
@@ -885,18 +796,23 @@ function doPDFid(id){
   if(!jsPDF){toast('PDF library not loaded.');return;}
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const PW=277,LM=10;
+
+  // Header
   doc.setFillColor(61,26,107);doc.rect(0,0,297,22,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
   doc.text('SHSCT Ligature Risk Assessment',LM,9);
   doc.setFontSize(8);doc.setFont(undefined,'normal');
   doc.text('Southern Health & Social Care Trust - Management of Self Harm through the use of Ligatures (June 2026 - SGN-125)',LM,15);
   doc.text('Generated: '+new Date().toLocaleDateString('en-GB'),PW,15,{align:'right'});
+
   let y=27;
   doc.setTextColor(20,20,20);doc.setFontSize(13);doc.setFont(undefined,'bold');
   doc.text((a.ward||'Assessment')+' - Ligature Risk Assessment',LM,y);y+=5;
   doc.setFontSize(8);doc.setFont(undefined,'normal');doc.setTextColor(80,80,80);
   doc.text(`${a.dir||''} - ${a.div||''} - Date: ${a.date} - Assessor: ${a.assessor||'-'} - Approver: ${a.approver||'-'} (${a.appDate||'-'})`,LM,y);y+=5;
   doc.setTextColor(20,20,20);
+
+  // Section 1 details table
   doc.autoTable({startY:y,margin:{left:LM,right:10},
     head:[['Field','Response','Field','Response']],
     body:[
@@ -914,41 +830,142 @@ function doPDFid(id){
     theme:'grid'
   });
   y=doc.lastAutoTable.finalY+3;
-  if(a.svc){if(y>170){doc.addPage();y=15;}doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Service presentation:',LM,y);y+=4;doc.setFont(undefined,'normal');const sl=doc.splitTextToSize(a.svc,PW-20);doc.text(sl,LM,y);y+=sl.length*3.5+3;}
-  if((a.piActions||[]).length||(a.piNotes&&a.piNotes.trim())){if(y>165){doc.addPage();y=15;}const piText='Post-incident actions: '+(a.piActions||[]).join(' | ')+(a.piNotes?'\nNotes: '+a.piNotes:'');const psl=doc.splitTextToSize(piText,PW-20);doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text(psl,LM,y);y+=psl.length*3.5+3;}
+
+  if(a.svc){
+    if(y>170){doc.addPage();y=15;}
+    doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Service presentation:',LM,y);y+=4;
+    doc.setFont(undefined,'normal');const sl=doc.splitTextToSize(a.svc,PW-20);doc.text(sl,LM,y);y+=sl.length*3.5+3;
+  }
+
+  // Post-incident actions
+  if((a.piActions||[]).length||(a.piNotes&&a.piNotes.trim())){
+    if(y>165){doc.addPage();y=15;}
+    const piText='Post-incident actions: '+(a.piActions||[]).join(' | ')+(a.piNotes?'\nNotes: '+a.piNotes:'');
+    const psl=doc.splitTextToSize(piText,PW-20);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');doc.text(psl,LM,y);y+=psl.length*3.5+3;
+  }
+
+  // Overall RAG band
   if(y>165){doc.addPage();y=15;}
   const rc={red:[185,28,28],amb:[180,83,9],grn:[22,101,52]}[a.overallRag]||[100,100,100];
   doc.setFillColor(...rc);doc.rect(LM,y,PW-20,8,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont(undefined,'bold');
   doc.text('Overall risk rating: '+({red:'RED - High risk',amb:'AMBER - Medium risk',grn:'GREEN - Low risk'}[a.overallRag]||'-'),LM+3,y+5.5);
   y+=11;doc.setTextColor(20,20,20);
-  if(a.env){if(y>160){doc.addPage();y=15;}doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Environmental safety checklist',LM,y);y+=2;
-    doc.autoTable({startY:y,margin:{left:LM,right:10},head:[['Item','Response','Item','Response']],body:[['Vision panels in doors',a.env.vision||'-','Access / egress controls',a.env.access||'-'],['Solid doors without panels',a.env.solid||'-','Staff alarm systems',a.env.alarm||'-'],['Thumb locks in rooms',a.env.thumb||'-','Communication systems',a.env.comms||'-'],['Staff override keys',a.env.keys||'-','Anti-barricade door management',a.env.door||'-'],['CCTV coverage',a.env.cctv||'-','Ligature cutters (weekly checked)',a.env.cutters||'-'],['Floor plan (RAG colour-coded)',a.env.floorplan||'-','Environmental notes',a.env.notes||'-']],styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},columnStyles:{0:{fontStyle:'bold',cellWidth:44},1:{cellWidth:66},2:{fontStyle:'bold',cellWidth:44},3:{cellWidth:66}},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
-  if(y>150){doc.addPage();y=15;}doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ligature point assessment (room by room)',LM,y);y+=2;
-  const lpBd=(a.lps||[]).map(lp=>[(lp.rag||'-').toUpperCase(),lp.lpN?lp.lpN.substring(0,40):('Ref '+(lp.lpR||'-')),lp.room||'-',lp.wb||'-',lp.obs||'-',lp.desc||'-',lp.ctrl||'-',String(lp.l||'-'),String(lp.i||'-'),String(lp.rr||'-'),lp.act||'-',lp.ace||'-',lp.tgt||'-',lp.done||'-',String(lp.par||'-')]);
-  doc.autoTable({startY:y,margin:{left:LM,right:10},head:[['RAG area','Ligature point','Room','Wt bearing','Obs. level','Description','Existing controls','L','I','RR','Further action','Actionee','Target date','Actual completed','Post-action RR']],body:lpBd.length?lpBd:[['No ligature points recorded','','','','','','','','','','','','','','']],styles:{fontSize:6.5,cellPadding:1.6,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[107,63,160],textColor:255,fontStyle:'bold',fontSize:6.5},columnStyles:{0:{cellWidth:12},1:{cellWidth:38},2:{cellWidth:14},3:{cellWidth:13},4:{cellWidth:14},5:{cellWidth:30},6:{cellWidth:30},7:{cellWidth:7},8:{cellWidth:7},9:{cellWidth:9},10:{cellWidth:32},11:{cellWidth:20},12:{cellWidth:16},13:{cellWidth:16},14:{cellWidth:13}},theme:'grid',didParseCell:(d)=>{if(d.section==='body'){if(d.column.index===0){const v=(d.cell.raw||'').toUpperCase();if(v==='RED')d.cell.styles.fillColor=[254,226,226];else if(v==='AMB'||v==='AMBER')d.cell.styles.fillColor=[254,243,199];else if(v==='GRN'||v==='GREEN')d.cell.styles.fillColor=[220,252,231];}if(d.column.index===9){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}if(d.column.index===14){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}}}});
+
+  // Environmental checklist table
+  if(a.env){
+    if(y>160){doc.addPage();y=15;}
+    doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Environmental safety checklist',LM,y);y+=2;
+    doc.autoTable({startY:y,margin:{left:LM,right:10},
+      head:[['Item','Response','Item','Response']],
+      body:[
+        ['Vision panels in doors',a.env.vision||'-','Access / egress controls',a.env.access||'-'],
+        ['Solid doors without panels',a.env.solid||'-','Staff alarm systems',a.env.alarm||'-'],
+        ['Thumb locks in rooms',a.env.thumb||'-','Communication systems',a.env.comms||'-'],
+        ['Staff override keys',a.env.keys||'-','Anti-barricade door management',a.env.door||'-'],
+        ['CCTV coverage',a.env.cctv||'-','Ligature cutters (weekly checked)',a.env.cutters||'-'],
+        ['Floor plan (RAG colour-coded)',a.env.floorplan||'-','Environmental notes',a.env.notes||'-'],
+      ],
+      styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},
+      headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},
+      columnStyles:{0:{fontStyle:'bold',cellWidth:44},1:{cellWidth:66},2:{fontStyle:'bold',cellWidth:44},3:{cellWidth:66}},
+      theme:'grid'
+    });
+    y=doc.lastAutoTable.finalY+3;
+  }
+
+  // Ligature points table
+  if(y>150){doc.addPage();y=15;}
+  doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ligature point assessment (room by room)',LM,y);y+=2;
+  const lpBd=(a.lps||[]).map(lp=>[
+    (lp.rag||'-').toUpperCase(),
+    lp.lpN?lp.lpN.substring(0,40):('Ref '+(lp.lpR||'-')),
+    lp.room||'-',lp.wb||'-',lp.obs||'-',
+    lp.desc||'-',lp.ctrl||'-',
+    String(lp.l||'-'),String(lp.i||'-'),String(lp.rr||'-'),
+    lp.act||'-',lp.ace||'-',lp.tgt||'-',lp.done||'-',String(lp.par||'-'),
+  ]);
+  doc.autoTable({startY:y,margin:{left:LM,right:10},
+    head:[['RAG area','Ligature point','Room','Wt bearing','Obs. level','Description','Existing controls','L','I','RR','Further action','Actionee','Target date','Actual completed','Post-action RR']],
+    body:lpBd.length?lpBd:[['No ligature points recorded','','','','','','','','','','','','','','']],
+    styles:{fontSize:6.5,cellPadding:1.6,overflow:'linebreak',valign:'top'},
+    headStyles:{fillColor:[107,63,160],textColor:255,fontStyle:'bold',fontSize:6.5},
+    columnStyles:{
+      0:{cellWidth:12},1:{cellWidth:38},2:{cellWidth:14},3:{cellWidth:13},4:{cellWidth:14},
+      5:{cellWidth:30},6:{cellWidth:30},7:{cellWidth:7},8:{cellWidth:7},9:{cellWidth:9},
+      10:{cellWidth:32},11:{cellWidth:20},12:{cellWidth:16},13:{cellWidth:16},14:{cellWidth:13},
+    },
+    theme:'grid',
+    didParseCell:(d)=>{
+      if(d.section==='body'){
+        if(d.column.index===0){const v=(d.cell.raw||'').toUpperCase();if(v==='RED')d.cell.styles.fillColor=[254,226,226];else if(v==='AMB'||v==='AMBER')d.cell.styles.fillColor=[254,243,199];else if(v==='GRN'||v==='GREEN')d.cell.styles.fillColor=[220,252,231];}
+        if(d.column.index===9){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}
+        if(d.column.index===14){const r=parseInt(d.cell.raw);if(r>=15)d.cell.styles.fillColor=[254,226,226];else if(r>=8)d.cell.styles.fillColor=[254,243,199];else if(r>=4)d.cell.styles.fillColor=[254,249,195];else if(r>0)d.cell.styles.fillColor=[220,252,231];}
+      }
+    }
+  });
   y=doc.lastAutoTable.finalY+3;
-  if((a.reviews||[]).filter(r=>r.action||r.rdate).length){if(y>165){doc.addPage();y=15;}doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ward manager / facility manager follow-up and review',LM,y);y+=2;doc.autoTable({startY:y,margin:{left:LM,right:10},head:[['Review date','LP ref','Action undertaken','Actionee','Designation','Progress update']],body:a.reviews.filter(r=>r.action||r.rdate).map(r=>[r.rdate||'-',r.lpref||'-',r.action||'-',r.actionee||'-',r.desig||'-',r.progress||'-']),styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},columnStyles:{0:{cellWidth:22},1:{cellWidth:16},2:{cellWidth:70},3:{cellWidth:30},4:{cellWidth:36},5:{cellWidth:66}},theme:'grid'});y=doc.lastAutoTable.finalY+3;}
-  if(a.notes&&a.notes.trim()){if(y>185){doc.addPage();y=15;}doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Additional notes:',LM,y);y+=4;doc.setFont(undefined,'normal');const nl=doc.splitTextToSize(a.notes,PW-20);doc.text(nl,LM,y);}
+
+  // Ward manager review table (if any)
+  if((a.reviews||[]).filter(r=>r.action||r.rdate).length){
+    if(y>165){doc.addPage();y=15;}
+    doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Ward manager / facility manager follow-up and review',LM,y);y+=2;
+    doc.autoTable({startY:y,margin:{left:LM,right:10},
+      head:[['Review date','LP ref','Action undertaken','Actionee','Designation','Progress update']],
+      body:a.reviews.filter(r=>r.action||r.rdate).map(r=>[r.rdate||'-',r.lpref||'-',r.action||'-',r.actionee||'-',r.desig||'-',r.progress||'-']),
+      styles:{fontSize:7.5,cellPadding:2,overflow:'linebreak',valign:'top'},
+      headStyles:{fillColor:[61,26,107],textColor:255,fontStyle:'bold',fontSize:7.5},
+      columnStyles:{0:{cellWidth:22},1:{cellWidth:16},2:{cellWidth:70},3:{cellWidth:30},4:{cellWidth:36},5:{cellWidth:66}},
+      theme:'grid'
+    });
+    y=doc.lastAutoTable.finalY+3;
+  }
+
+  if(a.notes&&a.notes.trim()){
+    if(y>185){doc.addPage();y=15;}
+    doc.setFontSize(8);doc.setFont(undefined,'bold');doc.text('Additional notes:',LM,y);y+=4;
+    doc.setFont(undefined,'normal');const nl=doc.splitTextToSize(a.notes,PW-20);doc.text(nl,LM,y);
+  }
+
+  // Footer on every page
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFontSize(6.5);doc.setTextColor(140,140,140);doc.text('Return completed form to: ligature.safety@southerntrust.hscni.net  |  Training needs: safetyintervention.training@southerntrust.hscni.net  |  SHSCT Policy - Management of Self Harm through the use of Ligatures (June 2026 - SGN-125)  |  Page '+i+' of '+pages,LM,202);}
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);doc.setFontSize(6.5);doc.setTextColor(140,140,140);
+    doc.text('Return completed form to: ligature.safety@southerntrust.hscni.net  |  Training needs: safetyintervention.training@southerntrust.hscni.net  |  SHSCT Policy - Management of Self Harm through the use of Ligatures (June 2026 - SGN-125)  |  Page '+i+' of '+pages,LM,202);
+  }
+
   doc.save('SHSCT_LigatureRA_'+(a.ward||'Assessment').replace(/[^a-zA-Z0-9_]/g,'_')+'_'+a.date+'.pdf');
   toast('PDF exported successfully.');
 }
 
-document.addEventListener('DOMContentLoaded', async ()=>{
+// Seed demo data if nothing in storage
+function seedIfEmpty(){if(AS.length)return;
+  AS=[
+    {id:1700000001,date:'2026-05-12',dir:'Mental Health & Disability',div:'Bluestone Unit (CAH)',ward:'Bluestone Acute Ward',assessor:"J. O'Hare, Ward Manager",reason:'Annual review',svc:'20-bed acute mental health inpatient ward. Mixed sex. 24hr nursing cover. Side rooms with solid doors and vision panels. 1:1 observation capacity available.',persons:['Patient','Employee'],datix:'Yes',datixDetail:'1 ligature attempt using belt over door handle. No injury. Learning: anti-ligature handles required.',env:{vision:'Yes - most patient areas',solid:'Yes - en-suites / toilets only',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Yes - on resuscitation trolley, weekly checked',notes:'En-suite thumb locks remain a concern. Doors without vision panels in en-suites need ongoing risk management.'},lps:[
+      {rag:'red',lpR:2,lpN:'Doors: handles, hinges, door closers',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'En-suite bathroom door handle - solid door, no vision panel. Standard lever type, weight bearing.',ctrl:'Door handle reviewed - standard, not anti-ligature.',l:4,i:5,rr:20,act:'Replace with anti-ligature lever handle. Estates work order raised.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'red',lpR:14,lpN:'Shower hose / control knob / shower cubicle door',room:'En-suite',wb:'Yes',obs:'Unsupervised',desc:'Shower hose in en-suite - weight bearing when fixed to rail.',ctrl:'Standard hose - not anti-ligature type.',l:4,i:5,rr:20,act:'Replace shower hoses with breakaway anti-ligature type.',ace:'R. Kerr, Estates',tgt:'2026-07-01',done:'',pal:2,pai:5,par:10},
+      {rag:'amb',lpR:3,lpN:'Curtain rail systems (incl. suspended rails / shower curtains) / bedrails',room:'Bedrooms',wb:'No',obs:'Vision panel',desc:'Bedroom curtain track - suspended type. Anti-ligature track fitted.',ctrl:'Anti-ligature curtain rail installed. Weekly tested.',l:2,i:5,rr:10,act:'Confirm installation record with Estates. Re-test and document.',ace:'Ward Manager',tgt:'2026-06-15',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:10,lpN:'Sinks: taps, wall-mounted soap / towel dispensers',room:'Communal lounge',wb:'No',obs:'Direct',desc:'Wall mounted soap dispenser - collapsible type.',ctrl:'Collapsible dispensers fitted. Weekly checked.',l:1,i:3,rr:3,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'red',ctype:'2 x LC1 + 1 x Wire cutter (higher risk areas)',cloc:'Bottom compartment of resuscitation trolley, Bluestone ward station',incident:'Yes - no injury',datixRef:'IR1-2026-00441',piActions:['Scene secured / forensic evidence preserved','Doctor informed','Vital signs / physical observations taken','Site Manager / Senior Nurse informed','Family / next of kin informed','Documented in patient notes','Observation level reviewed and recorded in notes','Level of risk assessed and recorded in notes','DATIX completed and reference recorded','Staff hot debrief provided','Ligature cutter replaced immediately'],piNotes:'Ligature used was a belt. Ligature / anchor point was a door handle. Patient transferred to PICU. Debrief held same shift. Cutters replaced immediately.',reviews:[{rdate:'2026-05-20',lpref:'2',action:'Estates work order raised for anti-ligature door handles (all en-suites)',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Work order accepted. Installation scheduled 28/06/2026.'},{rdate:'2026-05-20',lpref:'14',action:'Anti-ligature shower hoses ordered and delivery confirmed',actionee:'R. Kerr',desig:'Estates Building Officer',progress:'Delivery expected 15/06/2026. Installation to follow.'}],esc:'Yes',escDate:'2026-05-13',riskReg:'Yes',rRef:'MHD-2026-047',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'Dr A. McAuley, Consultant Psychiatrist',appDate:'2026-05-14',notes:'Training needs form submitted. 2-yearly refresher training for all core staff due Nov 2026.'},
+    {id:1700000002,date:'2026-04-03',dir:"Children's, Young Persons & Women's Services",div:"Cedar Grove Children's Residential Home",ward:'Cedar Grove Residential Home',assessor:'M. Quinn, Head of Service',reason:'Initial',svc:"6-bed children's residential home. Ages 12-17. 24hr staffing. Bedroom doors have vision panels. Communal lounge and dining areas. Individual risk assessments in place for each resident.",persons:['Client','Employee'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'Yes - bathrooms / toilets only',keys:'Yes - all rooms',cctv:'Yes - partial coverage',floorplan:'Yes - requires updating',access:'Yes - partial controls',alarm:'Yes - personal alarms only',comms:'Yes - mobile phones only',door:'Not applicable',cutters:'Yes - secured central location, weekly checked',notes:'Alarm coverage to be extended to upper residential floors. Floor plan to be updated.'},lps:[
+      {rag:'amb',lpR:8,lpN:'Coat hooks',room:'Bedrooms',wb:'Yes',obs:'Vision panel',desc:'Fixed metal coat hook rear of bedroom door.',ctrl:'Standard coat hooks - weight bearing, not anti-ligature.',l:3,i:4,rr:12,act:'Replace with anti-ligature coat hooks (breakaway type).',ace:'Estates - CAH',tgt:'2026-06-30',done:'',pal:null,pai:null,par:null},
+      {rag:'amb',lpR:17,lpN:'Mobile phone / device charger',room:'Bedrooms',wb:'No',obs:'Intermittent',desc:'Charging cables in bedrooms - variable lengths.',ctrl:'Cable management reviewed. Length checked by staff.',l:2,i:4,rr:8,act:'Move charging to supervised communal area only. Remove bedroom cables.',ace:'M. Quinn',tgt:'2026-04-17',done:'2026-04-17',pal:1,pai:4,par:4},
+      {rag:'grn',lpR:5,lpN:'Radiators',room:'All areas',wb:'No',obs:'Direct',desc:'Panel radiators throughout - standard housing with covers.',ctrl:'Radiator covers fitted. No exposed pipework.',l:1,i:2,rr:2,act:'None required. Review at next annual assessment.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'amb',ctype:'3 x LC1 cutters',cloc:'Secure cabinet in staff office, ground floor. Communicated at induction.',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[{rdate:'2026-04-18',lpref:'17',action:'Bedroom charging cables removed. Communal charging station installed in lounge.',actionee:'M. Quinn',desig:'Head of Service',progress:'Completed 17/04/2026. Action closed. Post-action RR: 1x4=4.'}],esc:'Yes',escDate:'2026-04-05',riskReg:'Yes',rRef:'CYPWS-2026-011',sentHS:'Yes',tnf:'Yes',shared:'Yes',cutInd:'Yes',approver:'P. Dolan, Assistant Director',appDate:'2026-04-10',notes:'Alarm extension to upper floors to be costed and included in Estates plan Q3 2026. Floor plan to be updated to reflect communal charging point.'},
+    {id:1700000003,date:'2026-03-18',dir:'Medicine & Unscheduled Care',div:'Craigavon Area Hospital (CAH)',ward:'Emergency Department',assessor:'B. McConville, Clinical Nurse Manager',reason:'Annual review',svc:'High-acuity ED. Resus, majors, minors, triage areas. High staff-to-patient ratio. No unsupervised patient areas. 24hr consultant cover. High staff movement throughout.',persons:['Patient','Employee','Visitor'],datix:'No',datixDetail:'',env:{vision:'Yes - all patient areas',solid:'No solid doors without vision panels',thumb:'No thumb locks fitted',keys:'Yes - all rooms',cctv:'Yes - full coverage',floorplan:'Yes - current version on file',access:'Yes - fully controlled',alarm:'Yes - personal alarms & fixed points',comms:'Yes - radios and mobile phones',door:'Yes',cutters:'Not applicable (GREEN area)',notes:''},lps:[
+      {rag:'grn',lpR:1,lpN:'Windows: catches / frames / blinds',room:'All clinical areas',wb:'No',obs:'Direct',desc:'All windows - window restrictors fitted.',ctrl:'Restrictors in place throughout. Tested annually.',l:1,i:3,rr:3,act:'Confirm restrictor test dates with Estates.',ace:'C. Horisk, Estates',tgt:'2026-09-18',done:'',pal:null,pai:null,par:null},
+      {rag:'grn',lpR:16,lpN:'Fire bells / extinguisher brackets',room:'Entrances',wb:'No',obs:'Direct',desc:'Wall-mounted fire extinguisher brackets at clinical entrances. At height.',ctrl:'Brackets at height - not easily accessible from floor level.',l:1,i:2,rr:2,act:'None required.',ace:'',tgt:'',done:'',pal:null,pai:null,par:null}
+    ],overallRag:'grn',ctype:'Not applicable (GREEN area)',cloc:'',incident:'No',datixRef:'',piActions:[],piNotes:'',reviews:[],esc:'No',escDate:'',riskReg:'No',rRef:'',sentHS:'Yes',tnf:'No',shared:'Yes',cutInd:'No',approver:'C. Harron, Operational Manager',appDate:'2026-03-22',notes:'Low risk area - high staff presence at all times. Review in 12 months or following any incident. Cutters not applicable.'},
+  ];
+  try{sv('sa',AS);}catch(e){}
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
-  setSPStatus('Signing in to Microsoft 365...');
-  try{
-    await getToken();
-    setSPStatus('Connected as '+(currentUser||'user')+' \u2713','grn');
-    setTimeout(()=>setSPStatus(''),4000);
-    await loadAndRenderDash();
-  }catch(e){
-    setSPStatus('Sign-in required \u2014 '+e.message,'red');
-    renderDash();
-  }
+  seedIfEmpty();
+  renderDash();
 });
 </script>
 </body>
