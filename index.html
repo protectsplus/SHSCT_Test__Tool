@@ -552,12 +552,45 @@ function showView(v){
 }
 
 function initForm(){
+  // Reset Section 1
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-ward').value='';
+  document.getElementById('f-assessor').value='';
+  document.getElementById('f-reason').value='';
+  document.getElementById('f-svc').value='';
+  document.getElementById('f-datix').value='';
+  document.querySelectorAll('input[name="datix"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('#f-persons input[type="checkbox"]').forEach(c=>{c.checked=false;});
+  // Reset Section 2
+  ['e-vision','e-solid','e-thumb','e-keys','e-cctv','e-floorplan','e-access','e-alarm','e-comms','e-door','e-cutters'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('e-notes').value='';
+  // Reset Section 3
+  document.getElementById('lpb').innerHTML='';
+  // Reset Section 4
   ragV='';
   document.querySelectorAll('#rag-sel .ro').forEach(r=>r.className='ro');
   document.getElementById('rag-notice').style.display='none';
-  document.getElementById('lpb').innerHTML='';
+  // Reset Section 5
+  document.getElementById('f-ctype').value='';
+  document.getElementById('f-cloc').value='';
+  document.getElementById('f-incident').value='';
+  document.getElementById('f-datix-ref').value='';
+  document.getElementById('f-pi-notes').value='';
+  document.querySelectorAll('#f-pi input[type="checkbox"]').forEach(c=>{c.checked=false;});
+  // Reset Section 6
   document.getElementById('rev-body').innerHTML='';
+  // Reset Section 7
+  document.querySelectorAll('input[name="esc"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('input[name="rr"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('input[name="sent"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('input[name="tnf"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('input[name="shared"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.querySelectorAll('input[name="cutind"]').forEach(r=>{r.checked=(r.value==='No');});
+  document.getElementById('f-escdate').value='';
+  document.getElementById('f-rref').value='';
+  document.getElementById('f-approver').value='';
+  document.getElementById('f-appdate').value='';
+  document.getElementById('f-notes').value='';
   popDirs();addLPRow();addLPRow();addReviewRow();
 }
 
