@@ -919,7 +919,7 @@ window.addEventListener('load', ()=>{
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
   seedDemoData();
-  setTimeout(renderDash, 100);
+  setTimeout(()=>showView('dashboard'), 100);
 });
 function addCustomItem(containerId){
   const div=document.createElement('div');
