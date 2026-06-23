@@ -59,7 +59,7 @@ textarea{resize:vertical;min-height:60px;}
 .aa{display:flex;gap:5px;}.cw{position:relative;height:180px;}
 .empty{text-align:center;padding:36px 16px;color:var(--txm);}
 .empty h3{font-size:14px;color:var(--tx);margin-bottom:4px;}
-.toast{position:fixed;bottom:20px;right:20px;background:#1F2937;color:#fff;padding:10px 15px;border-radius:7px;font-size:13px;z-index:9999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;}
+.toast{position:fixed;bottom:30px;right:30px;background:#1F2937;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;min-width:280px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.3);}
 .toast.show{opacity:1;transform:translateY(0);}
 .hs{height:3px;background:linear-gradient(90deg,var(--pu),var(--mg));border-radius:2px 2px 0 0;}
 .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
@@ -189,6 +189,11 @@ textarea{resize:vertical;min-height:60px;}
         <div class="fg"><label>Door management: anti-barricade solutions / vision panels in place?</label><select id="e-door"><option value="">Select</option><option>Yes</option><option>Partial</option><option>No</option><option>Not applicable</option></select></div>
         <div class="fg"><label>Ligature rescue cutters available and subject to weekly check?</label><select id="e-cutters"><option value="">Select</option><option>Yes &mdash; on resuscitation trolley, weekly checked</option><option>Yes &mdash; secured central location, weekly checked</option><option>Yes but weekly check not yet confirmed</option><option>No &mdash; to be arranged</option></select></div>
         <div class="fg"><label>Environmental checklist notes / gaps identified</label><textarea id="e-notes" placeholder="Note any gaps, deficiencies or remedial actions required from the above items..."></textarea></div>
+        <div class="fg">
+          <label>Additional checklist items (add your own prompts or questions)</label>
+          <div id="custom-env-items"></div>
+          <button class="btn btn-o btn-s" style="margin-top:6px;" onclick="addCustomItem('custom-env-items')">+ Add custom item</button>
+        </div>
       </div>
     </div>
   </div>
@@ -199,8 +204,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="ch">
       <div><div class="ct">Section 3 &mdash; Ligature point assessment (room by room)</div>
       <div class="cs">Procedure Section 5: work up-down / left-right from a defined point in each room. Classify / colour-code each room. L = Likelihood (1&ndash;5) &middot; I = Impact (1&ndash;5) &middot; RR = L &times; I. If weight-bearing status unsure, assume yes.</div></div>
-      <button class="btn btn-o btn-s" onclick="addLPRow()">+ Add row</button>
-    </div>
+      </div>
     <div class="ibox"><p>&#9432; <strong>Complete suspension is not required for a ligature to be fatal.</strong> Partial suspension (semi-seated, kneeling, lying) carries the same risk. Assess all potential anchor points regardless of height. Some points (e.g. grab rails) may need to remain &mdash; formally assess and record the justification.</p></div>
     <div style="overflow-x:auto;">
     <table class="lpt" id="lpt"><thead><tr>
@@ -279,8 +283,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="ch">
       <div><div class="ct">Section 6 &mdash; Ward manager / facility manager follow-up &amp; review</div>
       <div class="cs">Record progress on actions. This section corresponds to Page 4 of the official RA form.</div></div>
-      <button class="btn btn-o btn-s" onclick="addReviewRow()">+ Add review row</button>
-    </div>
+      </div>
     <div style="overflow-x:auto;">
     <table class="review-tbl" id="rev-tbl"><thead><tr>
       <th style="width:100px;">Actual review date</th>
@@ -324,6 +327,12 @@ textarea{resize:vertical;min-height:60px;}
     <div class="fr">
       <div class="fg"><label>Ward manager / approver name &amp; designation</label><input type="text" id="f-approver" placeholder="Full name and job title"></div>
       <div class="fg"><label>Date approved</label><input type="date" id="f-appdate"></div>
+    </div>
+    <div class="fg">
+      <label>Custom prompts / additional questions for this assessment</label>
+      <p style="font-size:11px;color:var(--txm);margin-bottom:6px;">Add any ward-specific or Trust-specific prompts you want to capture that aren't covered in the sections above.</p>
+      <div id="custom-general-items"></div>
+      <button class="btn btn-o btn-s" style="margin-top:6px;" onclick="addCustomItem('custom-general-items')">+ Add custom prompt</button>
     </div>
     <div class="fg"><label>Additional notes</label><textarea id="f-notes" placeholder="Any further observations, actions or comments not captured above..."></textarea></div>
   </div>
@@ -635,17 +644,71 @@ function collectForm(){
     cutInd:document.querySelector('input[name="cutind"]:checked')?.value||'No',
     approver:document.getElementById('f-approver').value,appDate:document.getElementById('f-appdate').value,
     notes:document.getElementById('f-notes').value,
+    customEnv:collectCustomItems('custom-env-items'),
+    customGeneral:collectCustomItems('custom-general-items'),
   };
 }
 
+function addCustomItem(containerId){
+  const div=document.createElement('div');
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
+  div.innerHTML=`
+    <textarea placeholder="Enter your question or prompt..." style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;min-height:40px;resize:vertical;"></textarea>
+    <input type="text" placeholder="Response / answer" style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;">
+    <button onclick="this.closest('div').remove()" class="btn btn-s btn-del" style="margin-top:2px;">x</button>
+  `;
+  document.getElementById(containerId).appendChild(div);
+}
+
+function collectCustomItems(containerId){
+  const items=[];
+  const container=document.getElementById(containerId);
+  if(!container)return items;
+  container.querySelectorAll('div').forEach(row=>{
+    const q=row.querySelector('textarea')?.value?.trim();
+    const a=row.querySelector('input')?.value?.trim();
+    if(q)items.push({q,a:a||''});
+  });
+  return items;
+}
+
+function renderCustomItems(containerId, items){
+  const container=document.getElementById(containerId);
+  if(!container||!items?.length)return;
+  items.forEach(item=>{ 
+    const div=document.createElement('div');
+    div.style.cssText='display:grid;grid-template-columns:2fr 1fr auto;gap:7px;margin-bottom:7px;align-items:start;';
+    div.innerHTML=`
+      <textarea placeholder="Enter your question or prompt..." style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;min-height:40px;resize:vertical;">${item.q||''}</textarea>
+      <input type="text" placeholder="Response / answer" value="${item.a||''}" style="font-size:12px;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;">
+      <button onclick="this.closest('div').remove()" class="btn btn-s btn-del" style="margin-top:2px;">x</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
 function saveA(){
-  const d=collectForm();
-  if(!d.ward||!d.date){toast('Please enter ward name and date.');return;}
-  if(!d.overallRag){toast('Please select an overall RAG rating (Section 4).');return;}
-  AS.unshift(d);
-  try{sv('sa',AS);}catch(e){}
-  toast('Assessment saved.');
-  showView('dashboard');
+  try{
+    const d=collectForm();
+    if(!d.ward){
+      document.getElementById('f-ward').style.border='2px solid #B91C1C';
+      document.getElementById('f-ward').focus();
+      toast('Please enter a ward / department name.');return;
+    }
+    if(!d.date){toast('Please enter a date.');return;}
+    if(!d.overallRag){
+      document.getElementById('rag-sel').scrollIntoView({behavior:'smooth',block:'center'});
+      toast('Please select an overall RAG rating in Section 4.');return;
+    }
+    document.getElementById('f-ward').style.border='';
+    AS.unshift(d);
+    try{sv('sa',AS);}catch(e){}
+    toast('Assessment saved successfully.');
+    showView('dashboard');
+  }catch(err){
+    console.error('Save error:',err);
+    toast('Could not save: '+err.message);
+  }
 }
 
 async function loadAndRenderDash(){
