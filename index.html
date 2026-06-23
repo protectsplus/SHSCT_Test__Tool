@@ -502,7 +502,7 @@ async function loadWeeklyFromSP(){
   return WK;
 }
 async function deleteFromSP(spId){await spDEL("web/lists/getbytitle('"+SP_CONFIG.aList+"')/items("+spId+")");}
-async function loadAndRenderDash(){try{await loadFromSP();await loadWeeklyFromSP();}catch(e){console.warn('SP load failed:',e);}renderDash();}
+async function loadAndRenderDash(){try{await loadFromSP();await loadWeeklyFromSP();}catch(e){console.warn('SP load failed:',e);}seedDemoData();renderDash();}
 function setSPStatus(msg,col){const b=document.getElementById('sp-status');if(!b)return;b.textContent=msg;b.style.color=col==='red'?'#B91C1C':col==='grn'?'#166534':'#6B7280';b.style.display=msg?'block':'none';}
 // ===== END SHAREPOINT CONFIG =====
 
@@ -761,19 +761,14 @@ function showValidationErrors(errs){
   const btnRow=document.querySelector("#view-new > div:last-child");
   btnRow.parentNode.insertBefore(box,btnRow);box.scrollIntoView({behavior:"smooth",block:"center"});
 }
-async function saveA(){
+function saveA(){
   const d=collectForm();
   const errs=validateForm(d);
   if(errs.length){showValidationErrors(errs);return;}
   const ex=document.getElementById("val-errors");if(ex)ex.remove();
-  try{
-    await saveToSP(d);
-    await loadFromSP();
-    toast("Assessment saved to SharePoint.");
-    showView("dashboard");
-  }catch(e){
-    toast("Save failed: "+e.message);
-  }
+  AS.unshift(d);
+  toast("Assessment saved.");
+  showView('dashboard');
 }
 
 function renderDash(){
@@ -813,11 +808,8 @@ function closeWM(){document.getElementById('wmod').style.display='none';}
 async function saveWC(){
   const w={id:Date.now(),date:document.getElementById('w-date').value,ward:document.getElementById('w-ward').value,by:document.getElementById('w-by').value,risks:document.querySelector('input[name="wr"]:checked')?.value||'No',damage:document.querySelector('input[name="wd"]:checked')?.value||'No',cutters:document.querySelector('input[name="wc"]:checked')?.value||'Yes',clost:document.querySelector('input[name="wl"]:checked')?.value||'No',notes:document.getElementById('w-notes').value};
   if(!w.ward||!w.date){toast('Please select ward and date.');return;}
-  try{
-    await saveWeeklyToSP(w);
-    await loadWeeklyFromSP();
-    closeWM();renderWeekly();toast('Weekly check saved to SharePoint.');
-  }catch(e){toast('Save failed: '+e.message);}
+  WK.unshift(w);
+  closeWM();renderWeekly();toast('Weekly check saved.');
 }
 
 function renderHist(){
@@ -827,8 +819,6 @@ function renderHist(){
 }
 async function delA(id){
   if(!confirm('Delete this assessment?'))return;
-  const a=AS.find(x=>x.id===id);
-  if(a&&a.spId){try{await deleteFromSP(a.spId);}catch(e){toast('Delete from SharePoint failed: '+e.message);return;}}
   AS=AS.filter(x=>x.id!==id);
   renderHist();toast('Deleted.');
 }
@@ -992,19 +982,11 @@ function seedDemoData(){
   ];
 }
 
-document.addEventListener('DOMContentLoaded', async ()=>{
+document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   popDirs();
-  setSPStatus('Signing in to Microsoft 365...');
-  try{
-    await getToken();
-    setSPStatus('Connected as '+(currentUser||'user')+' \u2713','grn');
-    setTimeout(()=>setSPStatus(''),4000);
-    await loadAndRenderDash();
-  }catch(e){
-    setSPStatus('Sign-in required \u2014 '+e.message,'red');
-    seedDemoData();renderDash();
-  }
+  seedDemoData();
+  renderDash();
 });
 function addCustomItem(containerId){
   const div=document.createElement('div');
