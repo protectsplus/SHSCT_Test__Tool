@@ -720,10 +720,7 @@ function renderDash(){
   CH.lp=new Chart(c2,{type:'bar',data:{labels:srt.map(([r])=>{const f=LPR.find(x=>String(x.r)===String(r));return f?f.n.substring(0,34)+'...':'Ref '+r;}),datasets:[{data:srt.map(([,c])=>c),backgroundColor:'#6B3FA0',borderRadius:3}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:9}}}},responsive:true,maintainAspectRatio:false}});
 }
 
-async function loadAndRenderWeekly(){
-  try{await loadWeeklyFromSP();}catch(e){console.warn('SP weekly load failed:',e);}
-  renderWeekly();
-}
+function loadAndRenderWeekly(){renderWeekly();}
 function renderWeekly(){
   const el=document.getElementById('wk-list');
   if(!WK.length){el.innerHTML='<div class="empty"><h3>No weekly checks logged yet</h3><p>Click "Log this week" to record an inspection check.</p></div>';return;}
