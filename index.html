@@ -484,9 +484,11 @@ def('se',JSON.stringify([
   {n:'Mark Williamson',l:'Dungannon',b:'STH',p:'07585 981259'},
   {n:'Justine Crilly',l:'Armagh',b:'St Lukes',p:'07918 677855'},
 ]));
-function ld(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
+function ld(k){try{const v=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(v)?v:[];}catch(e){return[];}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 let AS=ld('sa'),WK=ld('sw'),ragV='',viewId=null,CH={};
+if(!Array.isArray(AS))AS=[];
+if(!Array.isArray(WK))WK=[];
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
